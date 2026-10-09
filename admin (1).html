@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4A1129">
+<title>Village · Gestione laboratori</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fondo: #4A1129;
+    --pannello: #5C1B35;
+    --carta: #561731;
+    --panna: #FBF3EE;
+    --salmone: #F2A79F;
+    --salvia: #A9C9A6;
+    --legno: #A3754A;
+    --legno-chiaro: #E3B88A;
+    --tenue: #E0B2BC;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: var(--fondo); color: var(--panna);
+    font-family: Archivo, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--salmone); }
+
+  .telaio { display: flex; flex-wrap: wrap; align-items: stretch; min-height: 100vh; }
+
+  nav {
+    flex: 1 1 230px; min-width: 200px;
+    background: var(--pannello);
+    padding: 24px 18px calc(24px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .marchio { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .marchio span { font-family: Fraunces, serif; font-size: 22px; font-weight: 800; }
+  nav button {
+    display: block; width: 100%; text-align: left;
+    padding: 13px 14px; border: none; border-radius: 12px;
+    background: transparent; color: var(--tenue);
+    font-family: Archivo, sans-serif; font-size: 15px; cursor: pointer;
+  }
+  nav button[aria-current="page"] {
+    background: rgba(242,167,159,.2);
+    box-shadow: inset 3px 0 0 var(--salmone);
+    color: var(--panna); font-weight: 600;
+  }
+
+  main {
+    flex: 999 1 620px; min-width: 0;
+    padding: 28px 28px calc(48px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 24px;
+  }
+
+  h1 { margin: 0; font-family: Fraunces, serif; font-size: 32px; font-weight: 800; line-height: 1.1; }
+  h2 { margin: 0 0 16px; font-size: 13px; letter-spacing: .12em; font-weight: 800; color: var(--tenue); text-transform: uppercase; }
+  h3 { margin: 0 0 12px; font-family: Fraunces, serif; font-size: 20px; font-weight: 800; }
+
+  .carta { background: var(--carta); border-radius: 18px; padding: 22px; }
+  .fila { display: flex; flex-wrap: wrap; gap: 18px; }
+  .fila > * { flex: 1 1 300px; min-width: 0; }
+
+  .griglia4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .tessera { background: var(--pannello); border-radius: 16px; padding: 18px; }
+  .tessera .eticchetta { font-size: 11px; letter-spacing: .1em; color: var(--tenue); text-transform: uppercase; }
+  .tessera .cifra { font-family: Fraunces, serif; font-size: 34px; font-weight: 800; line-height: 1.15; }
+  .tessera.spicca { box-shadow: inset 0 0 0 1px rgba(242,167,159,.6); }
+  .tessera.spicca .cifra { color: var(--salmone); }
+  .tessera.buona { box-shadow: inset 0 0 0 1px rgba(169,201,166,.6); }
+  .tessera.buona .cifra { color: var(--salvia); }
+
+  label { font-size: 14px; color: #F0DAD5; }
+  input, select, textarea {
+    padding: 10px 12px;
+    border: 1px solid rgba(251,243,238,.3);
+    border-radius: 10px;
+    background: rgba(251,243,238,.06);
+    color: var(--panna);
+    font-family: Archivo, sans-serif; font-size: 15px;
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+    outline: 3px solid var(--legno-chiaro); outline-offset: 2px;
+  }
+  textarea { width: 100%; min-height: 160px; resize: vertical; font-size: 13px; line-height: 1.5; }
+  .campo { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .campo input, .campo select { width: 150px; text-align: right; }
+
+  button.azione {
+    min-height: 44px; padding: 0 18px;
+    border: 1px solid rgba(251,243,238,.35); border-radius: 12px;
+    background: transparent; color: var(--panna);
+    font-family: Archivo, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  button.azione.piena { background: var(--salmone); border-color: var(--salmone); color: #4A1129; font-weight: 800; }
+  button.azione:disabled { opacity: .5; cursor: default; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .scorri { overflow-x: auto; }
+  th { text-align: left; font-size: 11px; letter-spacing: .1em; color: var(--tenue); font-weight: 600; padding: 10px 14px; text-transform: uppercase; }
+  td { padding: 10px 14px; border-top: 1px solid rgba(251,243,238,.1); }
+  tfoot td { border-top: 2px solid rgba(251,243,238,.3); font-weight: 700; }
+  td input { width: 72px; text-align: center; padding: 8px 10px; font-size: 14px; }
+
+  .pastiglia { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+  .pastiglia.presente { background: var(--salvia); color: #203A1F; }
+  .pastiglia.assente { background: transparent; box-shadow: inset 0 0 0 1px var(--salmone); color: var(--salmone); }
+  .pastiglia.attesa { background: transparent; box-shadow: inset 0 0 0 1px rgba(251,243,238,.4); color: var(--tenue); }
+  .pastiglia.verifica { background: var(--legno-chiaro); color: #432A12; }
+
+  .voce { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; font-size: 15px; }
+  .voce.somma { border-top: 1px solid rgba(251,243,238,.2); margin-top: 10px; padding-top: 14px; font-family: Fraunces, serif; font-size: 22px; font-weight: 800; }
+
+  .avviso { border-radius: 12px; padding: 12px 16px; font-size: 14px; line-height: 1.45; background: rgba(227,184,138,.2); border: 1px solid rgba(227,184,138,.5); }
+  .avviso.male { background: rgba(242,167,159,.18); border-color: rgba(242,167,159,.6); }
+  .nascosto { display: none !important; }
+
+  .ingresso { max-width: 420px; margin: 12vh auto; padding: 0 22px; }
+  .ingresso input { width: 100%; margin-top: 12px; }
+  .ingresso button { width: 100%; margin-top: 14px; }
+</style>
+</head>
+<body>
+
+<!-- ingresso ---------------------------------------------------------- -->
+<div class="ingresso" id="ingresso">
+  <div class="marchio">
+    <svg viewBox="0 0 120 140" width="26" height="30" aria-hidden="true" focusable="false">
+      <path fill="#A3754A" d="M44 30 L36 6 L58 22 C62 21 66 21 70 22 L92 6 L84 30 C94 40 98 54 98 66 C98 80 92 92 92 104 C92 120 100 126 104 132 L28 132 C20 132 16 126 16 118 C16 100 30 92 30 76 C30 60 34 42 44 30 Z"/>
+      <path d="M104 132 C120 127 124 110 113 102" fill="none" stroke="#A3754A" stroke-width="9" stroke-linecap="round"/>
+    </svg>
+    <span>Village</span>
+  </div>
+  <h1>Gestione laboratori</h1>
+  <form id="formIngresso" style="margin-top:20px">
+    <label for="token">Codice di accesso</label>
+    <input type="password" id="token" autocomplete="current-password" required>
+    <button type="submit" class="azione piena">Entra</button>
+  </form>
+  <div id="avvisoIngresso" class="avviso male nascosto" style="margin-top:14px"></div>
+</div>
+
+<!-- applicazione ------------------------------------------------------ -->
+<div class="telaio nascosto" id="app">
+  <nav>
+    <div class="marchio">
+      <svg viewBox="0 0 120 140" width="26" height="30" aria-hidden="true" focusable="false">
+        <path fill="#A3754A" d="M44 30 L36 6 L58 22 C62 21 66 21 70 22 L92 6 L84 30 C94 40 98 54 98 66 C98 80 92 92 92 104 C92 120 100 126 104 132 L28 132 C20 132 16 126 16 118 C16 100 30 92 30 76 C30 60 34 42 44 30 Z"/>
+        <path d="M104 132 C120 127 124 110 113 102" fill="none" stroke="#A3754A" stroke-width="9" stroke-linecap="round"/>
+      </svg>
+      <span>Village</span>
+    </div>
+    <button type="button" data-vista="giornata" aria-current="page">Giornata</button>
+    <button type="button" data-vista="mese">Mese</button>
+    <button type="button" data-vista="iscritti">Iscritti</button>
+    <button type="button" data-vista="impostazioni">Impostazioni</button>
+    <button type="button" id="btnEsci" style="margin-top:auto; color:#D29FAD">Esci</button>
+  </nav>
+
+  <main>
+    <div id="avvisoApp" class="avviso nascosto"></div>
+
+    <!-- GIORNATA ------------------------------------------------------ -->
+    <div data-pagina="giornata">
+      <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
+        <h1 id="titoloGiornata">Giornata</h1>
+        <div style="display:flex; gap:10px; align-items:center">
+          <label for="dataGiornata" style="font-size:13px">Data</label>
+          <input type="date" id="dataGiornata" style="width:auto">
+        </div>
+      </div>
+
+      <div class="griglia4" style="margin-bottom:22px">
+        <div class="tessera"><div class="eticchetta">Iscritti</div><div class="cifra" id="gIscritti">0</div></div>
+        <div class="tessera spicca"><div class="eticchetta">Presenti</div><div class="cifra" id="gPresenti">0</div></div>
+        <div class="tessera"><div class="eticchetta">Turni-insegnante</div><div class="cifra" id="gInsegnanti">0</div></div>
+        <div class="tessera buona"><div class="eticchetta">Utile giornata</div><div class="cifra" id="gUtile">€ 0</div></div>
+      </div>
+
+      <div class="fila" style="margin-bottom:22px">
+        <div class="carta" style="flex:999 1 420px">
+          <h2>Turni</h2>
+          <div class="scorri">
+            <table>
+              <thead>
+                <tr><th>Turno</th><th>Iscritti</th><th>Presenti</th><th>Insegnanti</th><th>Docenza</th></tr>
+              </thead>
+              <tbody id="corpoTurni"></tbody>
+              <tfoot><tr id="piediTurni"></tr></tfoot>
+            </table>
+          </div>
+          <div class="campo" style="margin-top:18px">
+            <label for="oreDipendenti">Ore dipendenti della giornata</label>
+            <input type="text" id="oreDipendenti" inputmode="decimal" style="width:100px">
+          </div>
+          <button type="button" class="azione piena" id="btnSalvaGiornata">Salva la giornata</button>
+        </div>
+
+        <div class="carta" style="flex:1 1 320px">
+          <h2>Conto della giornata</h2>
+          <div id="contoGiornata"></div>
+          <h3 style="margin-top:22px; font-size:16px">Costi straordinari</h3>
+          <div id="elencoExtra"></div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px">
+            <input type="text" id="extraDescrizione" placeholder="Descrizione" style="flex:2 1 140px">
+            <input type="text" id="extraImporto" placeholder="€" inputmode="decimal" style="flex:1 1 80px">
+            <button type="button" class="azione" id="btnAggiungiExtra">Aggiungi</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="carta">
+        <h2>Partecipanti</h2>
+        <div class="scorri">
+          <table>
+            <thead>
+              <tr><th>Nome</th><th>Turno</th><th>Prenotati</th><th>Presenti</th><th>Stato</th><th>Newsletter</th></tr>
+            </thead>
+            <tbody id="corpoIscrizioni"></tbody>
+          </table>
+        </div>
+        <p id="nessunIscritto" class="nascosto" style="color:var(--tenue); font-size:14px; margin-top:14px">
+          Nessuna iscrizione per questa data. Caricale dalla sezione Iscritti.
+        </p>
+      </div>
+    </div>
+
+    <!-- MESE ---------------------------------------------------------- -->
+    <div data-pagina="mese" class="nascosto">
+      <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
+        <h1>Rendiconto del mese</h1>
+        <div style="display:flex; gap:10px; align-items:center">
+          <label for="meseScelto" style="font-size:13px">Mese</label>
+          <input type="month" id="meseScelto" style="width:auto">
+        </div>
+      </div>
+
+      <div class="griglia4" style="margin-bottom:22px">
+        <div class="tessera"><div class="eticchetta">Presenti</div><div class="cifra" id="mPresenti">0</div></div>
+        <div class="tessera"><div class="eticchetta">Ricavi</div><div class="cifra" id="mRicavi">€ 0</div></div>
+        <div class="tessera spicca"><div class="eticchetta">Ad Alfredo</div><div class="cifra" id="mAlfredo">€ 0</div></div>
+        <div class="tessera buona"><div class="eticchetta">Al Village</div><div class="cifra" id="mVillage">€ 0</div></div>
+      </div>
+
+      <div class="fila">
+        <div class="carta" style="flex:1 1 320px">
+          <h2>Dal lordo alla divisione</h2>
+          <div id="contoMese"></div>
+          <div class="campo" style="margin-top:18px">
+            <label for="giorniSponsor">Giorni di sponsorizzata</label>
+            <input type="text" id="giorniSponsor" inputmode="numeric" style="width:90px">
+          </div>
+          <button type="button" class="azione" id="btnRicalcolaMese">Ricalcola</button>
+        </div>
+
+        <div class="carta" style="flex:999 1 420px">
+          <h2>Giornate del mese</h2>
+          <div class="scorri">
+            <table>
+              <thead><tr><th>Data</th><th>Iscritti</th><th>Presenti</th><th>Ricavi</th><th>Utile</th></tr></thead>
+              <tbody id="corpoMese"></tbody>
+            </table>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:14px; margin-top:20px">
+            <div class="tessera" style="flex:1 1 180px"><div class="eticchetta">Tasso di presenza</div><div class="cifra" id="mTasso">0%</div></div>
+            <div class="tessera" style="flex:1 1 180px"><div class="eticchetta">Consensi newsletter</div><div class="cifra" id="mConsensi">0</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ISCRITTI ------------------------------------------------------ -->
+    <div data-pagina="iscritti" class="nascosto">
+      <h1 style="margin-bottom:22px">Iscritti</h1>
+
+      <div class="carta" style="margin-bottom:22px">
+        <h2>Carica le prenotazioni</h2>
+        <p style="font-size:14px; line-height:1.55; color:var(--tenue); margin:0 0 16px">
+          Incolla qui il contenuto dell'export di Superb, intestazioni comprese. Vanno bene CSV,
+          punto e virgola o colonne copiate da Excel. Poi dici quale colonna è quale.
+        </p>
+        <div class="campo">
+          <label for="dataImport">Data dei turni da caricare</label>
+          <input type="date" id="dataImport" style="width:auto">
+        </div>
+        <textarea id="testoImport" placeholder="Nome;Email;Persone;Turno&#10;Marta Bersani;marta@esempio.it;3;11:30"></textarea>
+        <div id="mappaturaImport" class="nascosto" style="margin-top:16px">
+          <div class="fila">
+            <div><label for="colNome">Colonna nome</label><br><select id="colNome" style="width:100%; margin-top:6px"></select></div>
+            <div><label for="colEmail">Colonna email</label><br><select id="colEmail" style="width:100%; margin-top:6px"></select></div>
+            <div><label for="colPosti">Colonna persone</label><br><select id="colPosti" style="width:100%; margin-top:6px"></select></div>
+            <div><label for="colTurno">Colonna turno</label><br><select id="colTurno" style="width:100%; margin-top:6px"></select></div>
+          </div>
+          <p id="anteprimaImport" style="font-size:13px; color:var(--tenue); margin:14px 0 0"></p>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap">
+          <button type="button" class="azione" id="btnLeggiImport">Leggi le colonne</button>
+          <button type="button" class="azione piena nascosto" id="btnConfermaImport">Carica</button>
+        </div>
+      </div>
+
+      <div class="carta">
+        <h2>Consensi per Brevo</h2>
+        <p style="font-size:14px; line-height:1.55; color:var(--tenue); margin:0 0 16px">
+          Scarica un CSV con le sole persone che hanno dato il consenso, senza doppioni.
+        </p>
+        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center">
+          <label for="consensiDa">Dal</label><input type="date" id="consensiDa" style="width:auto">
+          <label for="consensiA">Al</label><input type="date" id="consensiA" style="width:auto">
+          <button type="button" class="azione piena" id="btnConsensi">Scarica CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPOSTAZIONI -------------------------------------------------- -->
+    <div data-pagina="impostazioni" class="nascosto">
+      <h1 style="margin-bottom:6px">Impostazioni e costi</h1>
+      <p style="color:var(--tenue); font-size:15px; margin:0 0 22px; max-width:70ch">
+        Valori di partenza. Il numero di insegnanti e le ore dei dipendenti si inseriscono sulla giornata.
+      </p>
+      <div class="fila" id="pannelliImpostazioni"></div>
+      <button type="button" class="azione piena" id="btnSalvaImpostazioni" style="margin-top:22px; align-self:flex-start">
+        Salva le impostazioni
+      </button>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ===================================================================
+  // INCOLLA QUI l'indirizzo dell'app web di Apps Script (finisce con /exec)
+  const API = 'https://script.google.com/macros/s/AKfycbyIXegeoTwPpMZV9oHXrHA9LoW7lwB0h-Z8dU6RMKUbdP1uQOERz9hacPnInn8b2PrPaA/exec';
+  // ===================================================================
+
+  var CHIAVE = 'village_token';
+  var token = localStorage.getItem(CHIAVE) || '';
+  var giornata = null;
+  var impostazioni = {};
+  var extraLocali = [];
+
+  var el = function (id) { return document.getElementById(id); };
+  var euro = function (n) {
+    return '€ ' + (Number(n) || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+  var euroTondo = function (n) {
+    return '€ ' + Math.round(Number(n) || 0).toLocaleString('it-IT');
+  };
+  var oggiISO = function () {
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  };
+
+  function avvisa(testo, male) {
+    var n = el('avvisoApp');
+    n.textContent = testo || '';
+    n.classList.toggle('male', !!male);
+    n.classList.toggle('nascosto', !testo);
+    if (testo && !male) setTimeout(function () { n.classList.add('nascosto'); }, 4000);
+  }
+
+  function chiama(dati) {
+    var corpo = new URLSearchParams();
+    corpo.append('token', token);
+    Object.keys(dati).forEach(function (k) {
+      var v = dati[k];
+      corpo.append(k, typeof v === 'object' ? JSON.stringify(v) : v);
+    });
+    return fetch(API, { method: 'POST', body: corpo })
+      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.errore || 'Errore');
+        return r;
+      });
+  }
+
+  /* ---------------------------------------------------------- ingresso */
+
+  el('formIngresso').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    token = el('token').value.trim();
+    chiama({ azione: 'impostazioni' })
+      .then(function (r) {
+        localStorage.setItem(CHIAVE, token);
+        impostazioni = r.impostazioni;
+        entra();
+      })
+      .catch(function (err) {
+        var n = el('avvisoIngresso');
+        n.textContent = 'Codice non valido: ' + err.message;
+        n.classList.remove('nascosto');
+      });
+  });
+
+  el('btnEsci').addEventListener('click', function () {
+    localStorage.removeItem(CHIAVE);
+    location.reload();
+  });
+
+  function entra() {
+    el('ingresso').classList.add('nascosto');
+    el('app').classList.remove('nascosto');
+    el('dataGiornata').value = oggiISO();
+    el('dataImport').value = oggiISO();
+    el('meseScelto').value = oggiISO().slice(0, 7);
+    el('consensiDa').value = oggiISO().slice(0, 8) + '01';
+    el('consensiA').value = oggiISO();
+    disegnaImpostazioni();
+    caricaGiornata();
+  }
+
+  /* ------------------------------------------------------------ viste */
+
+  Array.prototype.forEach.call(document.querySelectorAll('nav button[data-vista]'), function (b) {
+    b.addEventListener('click', function () {
+      var vista = b.getAttribute('data-vista');
+      Array.prototype.forEach.call(document.querySelectorAll('nav button[data-vista]'), function (x) {
+        if (x === b) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current');
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-pagina]'), function (p) {
+        p.classList.toggle('nascosto', p.getAttribute('data-pagina') !== vista);
+      });
+      if (vista === 'mese') caricaMese();
+    });
+  });
+
+  /* --------------------------------------------------------- giornata */
+
+  el('dataGiornata').addEventListener('change', caricaGiornata);
+
+  function caricaGiornata() {
+    chiama({ azione: 'giornata', data: el('dataGiornata').value })
+      .then(function (r) {
+        giornata = r;
+        impostazioni = r.impostazioni;
+        extraLocali = r.extra.slice();
+        disegnaGiornata();
+      })
+      .catch(function (err) { avvisa('Non riesco a leggere la giornata: ' + err.message, true); });
+  }
+
+  function disegnaGiornata() {
+    var d = new Date(giornata.data + 'T12:00:00');
+    var testo = d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+    el('titoloGiornata').textContent = testo.charAt(0).toUpperCase() + testo.slice(1);
+
+    var c = giornata.conto;
+    el('gIscritti').textContent = c.iscritti;
+    el('gPresenti').textContent = c.presenti;
+    el('gInsegnanti').textContent = c.turniInsegnante;
+    el('gUtile').textContent = euroTondo(c.utile);
+    el('oreDipendenti').value = giornata.oreDipendenti;
+
+    // turni
+    var durata = Number(impostazioni.durata_turno_ore) || 1.5;
+    var oraIns = Number(impostazioni.alfredo_insegnante_ora) || 20;
+    var corpo = el('corpoTurni');
+    corpo.innerHTML = '';
+    giornata.turni.forEach(function (t, i) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + t.orario + '</td>' +
+        '<td>' + t.iscritti + '</td>' +
+        '<td>' + t.presenti + '</td>' +
+        '<td><input type="text" inputmode="numeric" value="' + t.insegnanti +
+          '" data-turno="' + i + '" aria-label="Insegnanti turno ' + t.orario + '"></td>' +
+        '<td data-docenza="' + i + '">' + euro(t.insegnanti * durata * oraIns) + '</td>';
+      corpo.appendChild(tr);
+    });
+    if (!giornata.turni.length) {
+      corpo.innerHTML = '<tr><td colspan="5" style="color:var(--tenue)">Nessun turno standard per questo giorno. ' +
+        'Aggiungi i turni nelle impostazioni, oppure carica delle iscrizioni con un orario.</td></tr>';
+    }
+    aggiornaPiediTurni();
+
+    Array.prototype.forEach.call(corpo.querySelectorAll('input[data-turno]'), function (inp) {
+      inp.addEventListener('input', function () {
+        var i = Number(inp.getAttribute('data-turno'));
+        var n = Math.max(0, Math.round(Number(inp.value.replace(',', '.')) || 0));
+        giornata.turni[i].insegnanti = n;
+        var cella = corpo.querySelector('[data-docenza="' + i + '"]');
+        if (cella) cella.textContent = euro(n * durata * oraIns);
+        aggiornaPiediTurni();
+        ricalcolaLocale();
+      });
+    });
+
+    // iscrizioni
+    var ci = el('corpoIscrizioni');
+    ci.innerHTML = '';
+    el('nessunIscritto').classList.toggle('nascosto', giornata.iscrizioni.length > 0);
+    giornata.iscrizioni.forEach(function (r) {
+      var classe = r.stato === 'Presente' ? 'presente'
+                 : r.stato === 'Assente' ? 'assente'
+                 : r.stato === 'Da verificare' ? 'verifica' : 'attesa';
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + escapeHtml(r.nome) + '<br><span style="font-size:12px;color:var(--tenue)">' +
+          escapeHtml(r.email || '') + '</span></td>' +
+        '<td>' + (r.turno || '—') + '</td>' +
+        '<td>' + r.prenotati + '</td>' +
+        '<td><input type="text" inputmode="numeric" value="' + r.presenti +
+          '" data-presenza="' + r.id + '" aria-label="Presenti di ' + escapeHtml(r.nome) + '"></td>' +
+        '<td><span class="pastiglia ' + classe + '">' + r.stato.toUpperCase() + '</span></td>' +
+        '<td>' + (r.newsletter ? 'sì' : '—') + '</td>';
+      ci.appendChild(tr);
+    });
+
+    Array.prototype.forEach.call(ci.querySelectorAll('input[data-presenza]'), function (inp) {
+      inp.addEventListener('change', function () {
+        var id = inp.getAttribute('data-presenza');
+        var n = Math.max(0, Math.round(Number(inp.value.replace(',', '.')) || 0));
+        chiama({ azione: 'presenza', id: id, presenti: n })
+          .then(function () { avvisa('Presenza aggiornata.'); caricaGiornata(); })
+          .catch(function (err) { avvisa('Non salvato: ' + err.message, true); });
+      });
+    });
+
+    disegnaExtra();
+    disegnaConto(giornata.conto);
+  }
+
+  function aggiornaPiediTurni() {
+    var durata = Number(impostazioni.durata_turno_ore) || 1.5;
+    var oraIns = Number(impostazioni.alfredo_insegnante_ora) || 20;
+    var tot = giornata.turni.reduce(function (s, t) {
+      return { i: s.i + t.iscritti, p: s.p + t.presenti, n: s.n + t.insegnanti };
+    }, { i: 0, p: 0, n: 0 });
+    el('piediTurni').innerHTML =
+      '<td>Totale</td><td>' + tot.i + '</td><td>' + tot.p + '</td><td>' + tot.n + '</td>' +
+      '<td>' + euro(tot.n * durata * oraIns) + '</td>';
+  }
+
+  function disegnaExtra() {
+    var n = el('elencoExtra');
+    n.innerHTML = '';
+    if (!extraLocali.length) {
+      n.innerHTML = '<p style="font-size:13px;color:var(--tenue);margin:0">Nessuno.</p>';
+      return;
+    }
+    extraLocali.forEach(function (e, i) {
+      var riga = document.createElement('div');
+      riga.className = 'voce';
+      riga.innerHTML = '<span>' + escapeHtml(e.descrizione) + '</span>' +
+        '<span><strong>' + euro(e.importo) + '</strong> ' +
+        '<button type="button" class="azione" style="min-height:30px;padding:0 10px;margin-left:8px" ' +
+        'data-togli="' + i + '" aria-label="Togli ' + escapeHtml(e.descrizione) + '">×</button></span>';
+      n.appendChild(riga);
+    });
+    Array.prototype.forEach.call(n.querySelectorAll('[data-togli]'), function (b) {
+      b.addEventListener('click', function () {
+        extraLocali.splice(Number(b.getAttribute('data-togli')), 1);
+        disegnaExtra(); ricalcolaLocale();
+      });
+    });
+  }
+
+  el('btnAggiungiExtra').addEventListener('click', function () {
+    var d = el('extraDescrizione').value.trim();
+    var imp = Number(el('extraImporto').value.replace(',', '.')) || 0;
+    if (!d || !imp) { avvisa('Servono descrizione e importo.', true); return; }
+    extraLocali.push({ descrizione: d, importo: imp, turno: '', aCarico: '', documento: '' });
+    el('extraDescrizione').value = ''; el('extraImporto').value = '';
+    disegnaExtra(); ricalcolaLocale();
+  });
+
+  el('oreDipendenti').addEventListener('input', ricalcolaLocale);
+
+  /** Ricalcolo immediato in pagina, prima del salvataggio. */
+  function ricalcolaLocale() {
+    var i = impostazioni;
+    var prezzo = Number(i.prezzo_workshop) || 0;
+    var quota = Number(i.superb_quota_iscritto) || 0;
+    var perc = (Number(i.superb_percentuale) || 0) / 100;
+    var durata = Number(i.durata_turno_ore) || 1.5;
+    var oraIns = Number(i.alfredo_insegnante_ora) || 0;
+    var ceramica = Number(i.alfredo_ceramica_persona) || 0;
+    var cibo = Number(i.alba_cibo_persona) || 0;
+    var oraDip = Number(i.alba_dipendenti_ora) || 0;
+
+    var presenti = giornata.iscrizioni.reduce(function (s, r) { return s + r.presenti; }, 0);
+    var iscritti = giornata.iscrizioni.reduce(function (s, r) { return s + r.prenotati; }, 0);
+    var base = String(i.ceramica_su) === 'iscritti' ? iscritti : presenti;
+    var turniIns = giornata.turni.reduce(function (s, t) { return s + t.insegnanti; }, 0);
+    var ore = Number(String(el('oreDipendenti').value).replace(',', '.')) || 0;
+
+    var c = {
+      iscritti: iscritti,
+      presenti: presenti,
+      turniInsegnante: turniIns,
+      ricavi: presenti * prezzo,
+      costoSuperb: presenti * (prezzo + quota) * perc,
+      costoDocenza: turniIns * durata * oraIns,
+      costoCeramica: base * ceramica,
+      costoCibo: presenti * cibo,
+      costoDipendenti: ore * oraDip,
+      costoExtra: extraLocali.reduce(function (s, e) { return s + e.importo; }, 0)
+    };
+    c.utile = c.ricavi - c.costoSuperb - c.costoDocenza - c.costoCeramica
+            - c.costoCibo - c.costoDipendenti - c.costoExtra;
+
+    el('gIscritti').textContent = c.iscritti;
+    el('gPresenti').textContent = c.presenti;
+    el('gInsegnanti').textContent = c.turniInsegnante;
+    el('gUtile').textContent = euroTondo(c.utile);
+    disegnaConto(c);
+  }
+
+  function disegnaConto(c) {
+    el('contoGiornata').innerHTML =
+      voce('Ricavi · ' + c.presenti + ' × ' + euro(impostazioni.prezzo_workshop), c.ricavi) +
+      voce('Superb', -c.costoSuperb) +
+      voce('Docenza · ' + c.turniInsegnante + ' turni-insegnante', -c.costoDocenza) +
+      voce('Ceramica', -c.costoCeramica) +
+      voce('Cibo e bevande', -c.costoCibo) +
+      voce('Dipendenti', -c.costoDipendenti) +
+      (c.costoExtra ? voce('Costi straordinari', -c.costoExtra) : '') +
+      '<div class="voce somma"><span>Utile</span><span>' + euro(c.utile) + '</span></div>';
+  }
+
+  function voce(etichetta, valore) {
+    return '<div class="voce"><span style="color:#F0DAD5">' + etichetta + '</span>' +
+           '<strong>' + (valore < 0 ? '− ' + euro(-valore) : euro(valore)) + '</strong></div>';
+  }
+
+  el('btnSalvaGiornata').addEventListener('click', function () {
+    var b = el('btnSalvaGiornata');
+    b.disabled = true; b.textContent = 'Salvo…';
+    chiama({
+      azione: 'salvaGiornata',
+      data: giornata.data,
+      oreDipendenti: String(el('oreDipendenti').value).replace(',', '.'),
+      turni: giornata.turni.map(function (t) {
+        return { orario: t.orario, insegnanti: t.insegnanti, attivo: t.attivo };
+      }),
+      extra: extraLocali
+    })
+      .then(function (r) {
+        giornata = r; extraLocali = r.extra.slice();
+        disegnaGiornata(); avvisa('Giornata salvata.');
+      })
+      .catch(function (err) { avvisa('Non salvata: ' + err.message, true); })
+      .finally(function () { b.disabled = false; b.textContent = 'Salva la giornata'; });
+  });
+
+  /* ------------------------------------------------------------- mese */
+
+  el('meseScelto').addEventListener('change', caricaMese);
+  el('btnRicalcolaMese').addEventListener('click', caricaMese);
+
+  function caricaMese() {
+    var dati = { azione: 'mese', mese: el('meseScelto').value };
+    var g = el('giorniSponsor').value.trim();
+    if (g) dati.giorniSponsor = g;
+
+    chiama(dati)
+      .then(function (r) {
+        el('mPresenti').textContent = r.presenti;
+        el('mRicavi').textContent = euroTondo(r.ricavi);
+        el('mAlfredo').textContent = euroTondo(r.adAlfredo);
+        el('mVillage').textContent = euroTondo(r.alVillage);
+        el('mTasso').textContent = r.tassoPresenza + '%';
+        el('mConsensi').textContent = r.consensiNewsletter;
+
+        el('contoMese').innerHTML =
+          voce('Utile delle giornate', r.utileGiornate) +
+          voce('Sponsorizzata', -r.sponsor) +
+          voce('Gestione del format', -r.gestione) +
+          voce('Location', -r.location) +
+          '<div class="voce somma"><span>Da dividere</span><span>' + euro(r.utileNetto) + '</span></div>' +
+          voce('Ad Alfredo', r.adAlfredo) +
+          voce('Al Village', r.alVillage);
+
+        var corpo = el('corpoMese');
+        corpo.innerHTML = '';
+        r.giornate.forEach(function (g2) {
+          var tr = document.createElement('tr');
+          var d = new Date(g2.data + 'T12:00:00');
+          tr.innerHTML = '<td>' + d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }) + '</td>' +
+            '<td>' + g2.conto.iscritti + '</td><td>' + g2.conto.presenti + '</td>' +
+            '<td>' + euroTondo(g2.conto.ricavi) + '</td><td>' + euroTondo(g2.conto.utile) + '</td>';
+          corpo.appendChild(tr);
+        });
+        if (!r.giornate.length) {
+          corpo.innerHTML = '<tr><td colspan="5" style="color:var(--tenue)">Nessuna giornata in questo mese.</td></tr>';
+        }
+      })
+      .catch(function (err) { avvisa('Non riesco a leggere il mese: ' + err.message, true); });
+  }
+
+  /* --------------------------------------------------------- iscritti */
+
+  var righeImport = [];
+
+  el('btnLeggiImport').addEventListener('click', function () {
+    var testo = el('testoImport').value.trim();
+    if (!testo) { avvisa('Incolla prima qualcosa.', true); return; }
+    righeImport = analizzaTabella(testo);
+    if (righeImport.length < 2) { avvisa('Non trovo righe sotto le intestazioni.', true); return; }
+
+    var intestazioni = righeImport[0];
+    ['colNome', 'colEmail', 'colPosti', 'colTurno'].forEach(function (id) {
+      var s = el(id);
+      s.innerHTML = '<option value="-1">— nessuna —</option>';
+      intestazioni.forEach(function (h, i) {
+        var o = document.createElement('option');
+        o.value = String(i); o.textContent = h || ('colonna ' + (i + 1));
+        s.appendChild(o);
+      });
+    });
+    indovina('colNome', intestazioni, ['nome', 'name', 'cliente', 'guest']);
+    indovina('colEmail', intestazioni, ['email', 'mail', 'e-mail']);
+    indovina('colPosti', intestazioni, ['persone', 'posti', 'guests', 'pax', 'quantita', 'quantità']);
+    indovina('colTurno', intestazioni, ['turno', 'orario', 'ora', 'time', 'slot']);
+
+    el('mappaturaImport').classList.remove('nascosto');
+    el('btnConfermaImport').classList.remove('nascosto');
+    el('anteprimaImport').textContent = (righeImport.length - 1) + ' righe pronte da caricare.';
+  });
+
+  function indovina(id, intestazioni, parole) {
+    for (var i = 0; i < intestazioni.length; i++) {
+      var h = String(intestazioni[i] || '').toLowerCase();
+      for (var j = 0; j < parole.length; j++) {
+        if (h.indexOf(parole[j]) !== -1) { el(id).value = String(i); return; }
+      }
+    }
+  }
+
+  function analizzaTabella(testo) {
+    var righe = testo.split(/\r?\n/).filter(function (r) { return r.trim(); });
+    var sep = '\t';
+    if (righe[0].indexOf('\t') === -1) {
+      sep = (righe[0].split(';').length > righe[0].split(',').length) ? ';' : ',';
+    }
+    return righe.map(function (r) {
+      return r.split(sep).map(function (c) { return c.trim().replace(/^"|"$/g, ''); });
+    });
+  }
+
+  el('btnConfermaImport').addEventListener('click', function () {
+    var iNome = Number(el('colNome').value);
+    var iEmail = Number(el('colEmail').value);
+    var iPosti = Number(el('colPosti').value);
+    var iTurno = Number(el('colTurno').value);
+
+    var dati = righeImport.slice(1).map(function (r) {
+      return {
+        nome: iNome >= 0 ? r[iNome] : '',
+        email: iEmail >= 0 ? r[iEmail] : '',
+        posti: iPosti >= 0 ? r[iPosti] : 1,
+        turno: iTurno >= 0 ? r[iTurno] : ''
+      };
+    }).filter(function (r) { return r.nome || r.email; });
+
+    if (!dati.length) { avvisa('Nessuna riga utile.', true); return; }
+
+    chiama({ azione: 'importa', data: el('dataImport').value, righe: dati })
+      .then(function (r) {
+        avvisa(r.nuove + ' nuove, ' + r.aggiornate + ' aggiornate.');
+        el('testoImport').value = '';
+        el('mappaturaImport').classList.add('nascosto');
+        el('btnConfermaImport').classList.add('nascosto');
+        if (el('dataImport').value === el('dataGiornata').value) caricaGiornata();
+      })
+      .catch(function (err) { avvisa('Import fallito: ' + err.message, true); });
+  });
+
+  el('btnConsensi').addEventListener('click', function () {
+    chiama({ azione: 'consensi', da: el('consensiDa').value, a: el('consensiA').value })
+      .then(function (r) {
+        if (!r.contatti.length) { avvisa('Nessun consenso nel periodo scelto.', true); return; }
+        var righe = [['EMAIL', 'NOME', 'COGNOME', 'DATA_WORKSHOP']];
+        r.contatti.forEach(function (c) { righe.push([c.email, c.nome, c.cognome, c.data]); });
+        var csv = righe.map(function (r2) {
+          return r2.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
+        }).join('\n');
+        scarica('consensi-brevo-' + el('consensiDa').value + '.csv', csv);
+        avvisa(r.contatti.length + ' contatti scaricati.');
+      })
+      .catch(function (err) { avvisa('Non riesco a scaricare: ' + err.message, true); });
+  });
+
+  function scarica(nome, contenuto) {
+    var blob = new Blob(['﻿' + contenuto], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nome;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+
+  /* ----------------------------------------------------- impostazioni */
+
+  var SCHEMA = [
+    { titolo: 'Biglietto', campi: [
+      ['prezzo_workshop', 'Prezzo workshop, a persona'],
+      ['superb_quota_iscritto', 'Superb, quota a iscritto'],
+      ['superb_percentuale', 'Superb, percentuale'],
+      ['durata_turno_ore', 'Durata del turno, in ore'],
+      ['posti_per_turno', 'Posti per turno']
+    ]},
+    { titolo: 'Alfredo', campi: [
+      ['alfredo_insegnante_ora', 'Insegnante, all’ora'],
+      ['alfredo_ceramica_persona', 'Ceramica, a persona'],
+      ['alfredo_gestione_mese', 'Gestione del format, al mese'],
+      ['alfredo_sponsor_giorno', 'Sponsorizzata, al giorno'],
+      ['ceramica_su', 'Ceramica calcolata su']
+    ]},
+    { titolo: 'Alba', campi: [
+      ['alba_dipendenti_ora', 'Dipendenti, all’ora'],
+      ['alba_ore_giornata', 'Ore dipendenti a giornata'],
+      ['alba_cibo_persona', 'Cibo e bevande, a persona'],
+      ['alba_location_mese', 'Location a forfait, al mese']
+    ]},
+    { titolo: 'Turni e divisione', campi: [
+      ['turni_sabato', 'Turni del sabato'],
+      ['turni_domenica', 'Turni della domenica'],
+      ['quota_alfredo', 'Quota di Alfredo, in percento'],
+      ['nome_evento', 'Nome dell’evento']
+    ]}
+  ];
+
+  function disegnaImpostazioni() {
+    var cont = el('pannelliImpostazioni');
+    cont.innerHTML = '';
+    SCHEMA.forEach(function (gruppo) {
+      var carta = document.createElement('div');
+      carta.className = 'carta';
+      carta.style.flex = '1 1 300px';
+      var html = '<h3>' + gruppo.titolo + '</h3>';
+      gruppo.campi.forEach(function (c) {
+        var chiave = c[0], etichetta = c[1];
+        var valore = impostazioni[chiave] !== undefined ? impostazioni[chiave] : '';
+        html += '<div class="campo"><label for="imp_' + chiave + '">' + etichetta + '</label>' +
+          '<input type="text" id="imp_' + chiave + '" data-chiave="' + chiave +
+          '" value="' + escapeHtml(String(valore)) + '"></div>';
+      });
+      carta.innerHTML = html;
+      cont.appendChild(carta);
+    });
+  }
+
+  el('btnSalvaImpostazioni').addEventListener('click', function () {
+    var valori = {};
+    Array.prototype.forEach.call(document.querySelectorAll('[data-chiave]'), function (inp) {
+      valori[inp.getAttribute('data-chiave')] = inp.value.trim();
+    });
+    chiama({ azione: 'salvaImpostazioni', valori: valori })
+      .then(function (r) {
+        impostazioni = r.impostazioni;
+        avvisa('Impostazioni salvate.');
+        caricaGiornata();
+      })
+      .catch(function (err) { avvisa('Non salvate: ' + err.message, true); });
+  });
+
+  function escapeHtml(s) {
+    return String(s === undefined || s === null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  /* ------------------------------------------------------------- avvio */
+
+  if (token) {
+    chiama({ azione: 'impostazioni' })
+      .then(function (r) { impostazioni = r.impostazioni; entra(); })
+      .catch(function () { localStorage.removeItem(CHIAVE); });
+  }
+})();
+</script>
+</body>
+</html>
