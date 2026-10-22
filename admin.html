@@ -595,7 +595,7 @@
 
         <div class="fila">
           <div class="riquadro-costo">
-            <div class="testa-costo"><h3>Costi Village</h3><span class="pastiglia paga-ccc" id="rsPagaVillage">paga CCC</span></div>
+            <div class="testa-costo"><h3>Costi Village</h3><button type="button" class="pastiglia paga-ccc" id="rsPagaVillage" title="Clicca per cambiare chi paga" style="border:0; cursor:pointer; font-family:inherit">paga CCC ⇄</button></div>
             <div class="campo" style="margin-bottom:8px">
               <label for="rsVillage">A forfait</label>
               <input type="text" id="rsVillage" inputmode="decimal" style="width:118px">
@@ -604,7 +604,7 @@
           </div>
 
           <div class="riquadro-costo">
-            <div class="testa-costo"><h3>Sponsorizzata</h3><span class="pastiglia paga-mml" id="rsPagaSponsor">paga MML</span></div>
+            <div class="testa-costo"><h3>Sponsorizzata</h3><button type="button" class="pastiglia paga-mml" id="rsPagaSponsor" title="Clicca per cambiare chi paga" style="border:0; cursor:pointer; font-family:inherit">paga MML ⇄</button></div>
             <div class="campo" style="margin-bottom:10px">
               <label for="rsSponsorGiorno">Al giorno</label>
               <input type="text" id="rsSponsorGiorno" inputmode="decimal" style="width:100px">
@@ -617,7 +617,7 @@
           </div>
 
           <div class="riquadro-costo">
-            <div class="testa-costo"><h3>Commissioni Superb</h3><span class="pastiglia paga-ccc" id="rsPagaSuperb">paga CCC</span></div>
+            <div class="testa-costo"><h3>Commissioni Superb</h3><button type="button" class="pastiglia paga-ccc" id="rsPagaSuperb" title="Clicca per cambiare chi paga" style="border:0; cursor:pointer; font-family:inherit">paga CCC ⇄</button></div>
             <div class="campo" style="margin-bottom:10px">
               <label for="rsSuperbPerc">Percentuale</label>
               <input type="text" id="rsSuperbPerc" inputmode="decimal" style="width:100px">
@@ -627,7 +627,7 @@
           </div>
 
           <div class="riquadro-costo">
-            <div class="testa-costo"><h3>Gestione del format</h3><span class="pastiglia paga-mml" id="rsPagaGestione">paga MML</span></div>
+            <div class="testa-costo"><h3>Gestione del format</h3><button type="button" class="pastiglia paga-mml" id="rsPagaGestione" title="Clicca per cambiare chi paga" style="border:0; cursor:pointer; font-family:inherit">paga MML ⇄</button></div>
             <div class="campo" style="margin-bottom:8px">
               <label for="rsGestione">Al mese</label>
               <input type="text" id="rsGestione" inputmode="decimal" style="width:118px">
@@ -656,9 +656,10 @@
 
     <!-- IMPOSTAZIONI -------------------------------------------------- -->
     <div data-pagina="impostazioni" class="nascosto">
-      <h1 style="margin-bottom:6px">Impostazioni e costi</h1>
+      <h1 style="margin-bottom:6px">Impostazioni</h1>
       <p style="color:var(--tenue); font-size:15px; margin:0 0 22px; max-width:70ch">
-        Valori di partenza. Il numero di insegnanti e le ore dei dipendenti si inseriscono sulla giornata.
+        Quello che non cambia da un evento all’altro. Ogni giornata si può comunque correggere sulla sua scheda,
+        e i costi del mese si cambiano direttamente nei Resoconti.
       </p>
       <div class="fila" id="pannelliImpostazioni"></div>
       <button type="button" class="azione piena" id="btnSalvaImpostazioni" style="margin-top:22px; align-self:flex-start">
@@ -1716,12 +1717,7 @@
     el('rsSuperbPerc').value = r.costi.percSuperb;
     el('rsGestione').value = trovaCosto('Gestione del format').importo;
 
-    ['Village', 'Sponsor', 'Superb', 'Gestione'].forEach(function (nome, i) {
-      var paga = r.costi.righe[i].paga;
-      var p2 = el('rsPaga' + nome);
-      p2.textContent = 'paga ' + paga;
-      p2.className = 'pastiglia ' + (paga === 'CCC' ? 'paga-ccc' : 'paga-mml');
-    });
+    Object.keys(CAMPI_PAGA).forEach(disegnaPastiglia);
 
     ricalcolaCostiMese();
   }
@@ -1743,6 +1739,32 @@
 
   Object.keys(CAMPI_COSTI).forEach(function (id) {
     el(id).addEventListener('input', ricalcolaCostiMese);
+  });
+
+  // chi paga ogni costo: un clic sulla pastiglia lo inverte
+  var CAMPI_PAGA = {
+    rsPagaVillage: ['Costi Village', 'mese_village_paga'],
+    rsPagaSponsor: ['Sponsorizzata', 'mese_sponsor_paga'],
+    rsPagaSuperb: ['Commissioni Superb', 'mese_superb_paga'],
+    rsPagaGestione: ['Gestione del format', 'mese_gestione_paga']
+  };
+
+  function disegnaPastiglia(id) {
+    var paga = trovaCosto(CAMPI_PAGA[id][0]).paga;
+    var p = el(id);
+    p.textContent = 'paga ' + paga + ' ⇄';
+    p.className = 'pastiglia ' + (paga === 'CCC' ? 'paga-ccc' : 'paga-mml');
+  }
+
+  Object.keys(CAMPI_PAGA).forEach(function (id) {
+    el(id).addEventListener('click', function () {
+      if (!resoconto) return;
+      var riga = resoconto.costi.righe.filter(function (x) { return x.etichetta === CAMPI_PAGA[id][0]; })[0];
+      if (!riga) return;
+      riga.paga = riga.paga === 'CCC' ? 'MML' : 'CCC';
+      disegnaPastiglia(id);
+      ricalcolaCostiMese();
+    });
   });
 
   /** Ricalcola i costi del mese e il saldo finale, mentre scrivi. */
@@ -1853,6 +1875,9 @@
     Object.keys(CAMPI_COSTI).forEach(function (id) {
       valori[CAMPI_COSTI[id]] = numero(id);
     });
+    Object.keys(CAMPI_PAGA).forEach(function (id) {
+      valori[CAMPI_PAGA[id][1]] = trovaCosto(CAMPI_PAGA[id][0]).paga;
+    });
     var b = el('btnSalvaCosti');
     b.disabled = true; b.textContent = 'Salvo…';
     chiama({ azione: 'salvaImpostazioni', valori: valori })
@@ -1918,28 +1943,9 @@
       ['alba_dipendenti_ora', 'Personale, all\u2019ora'],
       ['alba_ore_giornata', 'Ore di personale a giornata']
     ]},
-    { titolo: 'Eventi aziendali', campi: [
-      ['az_iva_mml', 'IVA su quello che fattura MML'],
-      ['az_iva_ccc', 'IVA su quello che fattura CCC']
-    ]},
-    { titolo: 'Costi del mese', campi: [
-      ['alba_location_mese', 'Costi Village, a forfait'],
-      ['alfredo_sponsor_giorno', 'Sponsorizzata, al giorno'],
-      ['mese_sponsor_giorni', 'Giorni di sponsorizzata'],
-      ['superb_percentuale', 'Commissioni Superb, percentuale'],
-      ['alfredo_gestione_mese', 'Gestione del format, al mese']
-    ]},
-    { titolo: 'Chi paga i costi del mese', campi: [
-      ['mese_village_paga', 'Costi Village'],
-      ['mese_sponsor_paga', 'Sponsorizzata'],
-      ['mese_superb_paga', 'Commissioni Superb'],
-      ['mese_gestione_paga', 'Gestione del format']
-    ]},
-    { titolo: 'Pagina cliente e QR', campi: [
-      ['nome_evento', 'Nome dell\u2019evento'],
-      ['superb_quota_iscritto', 'Superb, quota a iscritto'],
-      ['turni_sabato', 'Turni del sabato'],
-      ['turni_domenica', 'Turni della domenica']
+    { titolo: 'IVA \u00b7 eventi aziendali', campi: [
+      ['az_iva_mml', 'IVA su quello che fattura MML (%)'],
+      ['az_iva_ccc', 'IVA su quello che fattura CCC (%)']
     ]}
   ];
 
