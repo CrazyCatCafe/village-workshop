@@ -196,9 +196,11 @@
   </div>
   <h1>Gestione laboratori</h1>
   <form id="formIngresso" class="nascosto" style="margin-top:20px">
-    <label for="token">Codice di accesso</label>
+    <label for="utente">Nome utente</label>
+    <input type="text" id="utente" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+    <label for="token" style="margin-top:12px">Password</label>
     <input type="password" id="token" autocomplete="current-password" required>
-    <button type="submit" class="azione piena">Entra</button>
+    <button type="submit" class="azione piena" id="btnEntra" style="margin-top:16px">Entra</button>
   </form>
   <p id="attesaIngresso" style="margin-top:20px; color:var(--tenue); font-size:15px">Un attimo…</p>
   <div id="avvisoIngresso" class="avviso male nascosto" style="margin-top:14px"></div>
@@ -715,6 +717,7 @@
     n.textContent = messaggio || '';
     n.classList.toggle('nascosto', !messaggio);
     el('token').value = '';
+    if (!el('utente').value) el('utente').focus();
   }
   var impostazioni = {};
 
@@ -757,21 +760,36 @@
 
   el('formIngresso').addEventListener('submit', function (ev) {
     ev.preventDefault();
-    token = el('token').value.trim();
-    chiama({ azione: 'impostazioni' })
+    var pw = el('token').value;
+    var b = el('btnEntra');
+    b.disabled = true; b.textContent = 'Controllo…';
+    token = '';
+    chiama({ azione: 'accedi', utente: el('utente').value.trim(), password: pw })
+      .then(function (r) {
+        token = r.sessione;
+        return chiama({ azione: 'impostazioni' });
+      })
       .then(function (r) {
         ricordaToken(token);
         impostazioni = r.impostazioni;
+        el('token').value = '';
         entra();
       })
       .catch(function (err) {
-        chiediCodice('Codice non valido: ' + err.message);
-      });
+        token = '';
+        chiediCodice(err.message);
+      })
+      .finally(function () { b.disabled = false; b.textContent = 'Entra'; });
   });
 
   el('btnEsci').addEventListener('click', function () {
+    var t = token;
     dimenticaToken();
-    location.reload();
+    // chiudo la sessione anche sul server, poi ricarico (senza aspettare troppo)
+    var chiusa = false;
+    var via = function () { if (!chiusa) { chiusa = true; location.reload(); } };
+    chiama({ azione: 'esci' }).then(via, via);
+    setTimeout(via, 2500);
   });
 
   function entra() {
