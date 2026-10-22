@@ -126,7 +126,7 @@
   .scelta { max-width: 760px; margin: 10vh auto; padding: 0 22px; }
   .scelta .coppia { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 28px; }
   .scelta button {
-    flex: 1 1 280px; min-height: 200px;
+    flex: 1 1 210px; min-height: 190px;
     border: 1px solid rgba(251,243,238,.25); border-radius: 20px;
     background: var(--carta); color: var(--panna);
     padding: 28px; text-align: left; cursor: pointer;
@@ -180,11 +180,12 @@
     <span>Village</span>
   </div>
   <h1>Gestione laboratori</h1>
-  <form id="formIngresso" style="margin-top:20px">
+  <form id="formIngresso" class="nascosto" style="margin-top:20px">
     <label for="token">Codice di accesso</label>
     <input type="password" id="token" autocomplete="current-password" required>
     <button type="submit" class="azione piena">Entra</button>
   </form>
+  <p id="attesaIngresso" style="margin-top:20px; color:var(--tenue); font-size:15px">Un attimo…</p>
   <div id="avvisoIngresso" class="avviso male nascosto" style="margin-top:14px"></div>
 </div>
 
@@ -205,7 +206,11 @@
     </button>
     <button type="button" id="vaiAziendali">
       <span class="nome">Aziendali</span>
-      <span class="spiega">Un committente, un compenso concordato. Fattura Alfredo, e l'utile si divide a metà.</span>
+      <span class="spiega">Un committente, un compenso concordato. Fattura MML, e quello che entra si divide.</span>
+    </button>
+    <button type="button" id="vaiResoconti">
+      <span class="nome">Resoconti</span>
+      <span class="spiega">Il mese chiuso: privati e aziendali insieme, e chi deve a chi.</span>
     </button>
   </div>
 </div>
@@ -226,7 +231,7 @@
     <button type="button" data-vista="aziendali" data-modo="aziendali">Eventi aziendali</button>
     <button type="button" data-vista="resoconti" data-modo="tutti">Resoconti</button>
     <button type="button" data-vista="impostazioni" data-modo="tutti">Impostazioni</button>
-    <button type="button" id="btnCambiaModo" style="margin-top:auto; color:#D29FAD">Cambia tipo</button>
+    <button type="button" id="btnCambiaModo" style="margin-top:auto; color:#D29FAD">← Pagina principale</button>
     <button type="button" id="btnEsci" style="color:#D29FAD">Esci</button>
   </nav>
 
@@ -557,7 +562,43 @@
   // ===================================================================
 
   var CHIAVE = 'village_token';
-  var token = localStorage.getItem(CHIAVE) || '';
+  var CHIAVE_ORA = 'village_token_ora';
+  var DURATA = 12 * 60 * 60 * 1000; // dopo dodici ore il codice si richiede
+  var token = '';
+
+  /** Il codice ricordato vale solo finché non scade. */
+  function tokenSalvato() {
+    try {
+      var t = localStorage.getItem(CHIAVE);
+      var ora = Number(localStorage.getItem(CHIAVE_ORA) || 0);
+      if (!t) return '';
+      if (!ora || Date.now() - ora > DURATA) { dimenticaToken(); return ''; }
+      return t;
+    } catch (e) { return ''; }
+  }
+
+  function ricordaToken(t) {
+    try {
+      localStorage.setItem(CHIAVE, t);
+      localStorage.setItem(CHIAVE_ORA, String(Date.now()));
+    } catch (e) { /* in incognito non si puo: pazienza, si rientra a mano */ }
+  }
+
+  function dimenticaToken() {
+    try {
+      localStorage.removeItem(CHIAVE);
+      localStorage.removeItem(CHIAVE_ORA);
+    } catch (e) { /* niente da fare */ }
+  }
+
+  function chiediCodice(messaggio) {
+    el('attesaIngresso').classList.add('nascosto');
+    el('formIngresso').classList.remove('nascosto');
+    var n = el('avvisoIngresso');
+    n.textContent = messaggio || '';
+    n.classList.toggle('nascosto', !messaggio);
+    el('token').value = '';
+  }
   var giornata = null;
   var impostazioni = {};
   var extraLocali = [];
@@ -604,19 +645,17 @@
     token = el('token').value.trim();
     chiama({ azione: 'impostazioni' })
       .then(function (r) {
-        localStorage.setItem(CHIAVE, token);
+        ricordaToken(token);
         impostazioni = r.impostazioni;
         entra();
       })
       .catch(function (err) {
-        var n = el('avvisoIngresso');
-        n.textContent = 'Codice non valido: ' + err.message;
-        n.classList.remove('nascosto');
+        chiediCodice('Codice non valido: ' + err.message);
       });
   });
 
   el('btnEsci').addEventListener('click', function () {
-    localStorage.removeItem(CHIAVE);
+    dimenticaToken();
     location.reload();
   });
 
@@ -640,10 +679,13 @@
 
   el('vaiPrivati').addEventListener('click', function () { apriModo('privati'); });
   el('vaiAziendali').addEventListener('click', function () { apriModo('aziendali'); });
-  el('btnCambiaModo').addEventListener('click', function () {
+  el('vaiResoconti').addEventListener('click', function () { apriModo('resoconti'); });
+  el('btnCambiaModo').addEventListener('click', tornaAllaPrincipale);
+
+  function tornaAllaPrincipale() {
     el('app').classList.add('nascosto');
     el('scelta').classList.remove('nascosto');
-  });
+  }
 
   function apriModo(quale) {
     modo = quale;
@@ -656,7 +698,8 @@
     });
 
     if (modo === 'privati') { vaiA('giornata'); caricaGiornata(); }
-    else { vaiA('aziendali'); caricaAziendali(); }
+    else if (modo === 'aziendali') { vaiA('aziendali'); caricaAziendali(); }
+    else { vaiA('resoconti'); caricaResoconto(); }
   }
 
   function vaiA(vista) {
@@ -1616,10 +1659,15 @@
 
   /* ------------------------------------------------------------- avvio */
 
-  if (token) {
+  // Finché non so se il codice ricordato vale ancora, non mostro il modulo:
+  // vederlo e poi essere fatti entrare da soli sembra un buco, e confonde.
+  token = tokenSalvato();
+  if (!token) {
+    chiediCodice('');
+  } else {
     chiama({ azione: 'impostazioni' })
       .then(function (r) { impostazioni = r.impostazioni; entra(); })
-      .catch(function () { localStorage.removeItem(CHIAVE); });
+      .catch(function () { dimenticaToken(); chiediCodice(''); });
   }
 })();
 </script>
