@@ -162,6 +162,21 @@
   }
   .scelta-btn:focus-visible { outline: 3px solid var(--legno-chiaro); outline-offset: 2px; }
 
+  /* la riga sotto un campo che mostra la moltiplicazione mentre scrivi:
+     una cifra sbagliata si nota prima di salvare */
+  .conticino { text-align: right; font-size: 12px; color: var(--tenue); margin-bottom: 18px; min-height: 1em; }
+
+  .riquadro-costo { flex: 1 1 240px; min-width: 0; background: rgba(251,243,238,.06); border-radius: 14px; padding: 18px; }
+  .riquadro-costo .campo { margin-bottom: 10px; }
+  .riquadro-costo .campo input { width: 110px; }
+  .testa-costo { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .testa-costo h3 { margin: 0; font-family: Archivo, sans-serif; font-size: 12px; letter-spacing: .1em; color: var(--tenue); font-weight: 800; text-transform: uppercase; }
+  .pastiglia.paga-ccc { background: rgba(169,201,166,.25); color: #C9E0C6; font-size: 10px; }
+  .pastiglia.paga-mml { background: rgba(242,167,159,.25); color: #F7C7C1; font-size: 10px; }
+  .riga-totale { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: 1px solid rgba(251,243,238,.18); }
+  .riga-totale span { font-size: 12px; color: var(--tenue); }
+  .riga-totale strong { font-family: Fraunces, serif; font-size: 22px; }
+
   .extra-riga { background: rgba(251,243,238,.06); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
   .extra-riga:last-child { margin-bottom: 0; }
   .extra-riga input { padding: 9px 12px; font-size: 14px; }
@@ -202,7 +217,7 @@
   <div class="coppia">
     <button type="button" id="vaiPrivati">
       <span class="nome">Privati</span>
-      <span class="spiega">Laboratori a turni con iscrizioni singole. Incassiamo noi, i costi di ciascuno si scaricano prima di dividere.</span>
+      <span class="spiega">Giornate di laboratorio aperte ai singoli. Incassa CCC, e ciascuno si riprende i propri costi prima di dividere.</span>
     </button>
     <button type="button" id="vaiAziendali">
       <span class="nome">Aziendali</span>
@@ -225,8 +240,7 @@
       </svg>
       <span>Village</span>
     </div>
-    <button type="button" data-vista="giornata" data-modo="privati" aria-current="page">Giornata</button>
-    <button type="button" data-vista="mese" data-modo="privati">Mese</button>
+    <button type="button" data-vista="privati" data-modo="privati" aria-current="page">Eventi privati</button>
     <button type="button" data-vista="iscritti" data-modo="privati">Iscritti</button>
     <button type="button" data-vista="aziendali" data-modo="aziendali">Eventi aziendali</button>
     <button type="button" data-vista="resoconti" data-modo="tutti">Resoconti</button>
@@ -238,114 +252,133 @@
   <main>
     <div id="avvisoApp" class="avviso nascosto"></div>
 
-    <!-- GIORNATA ------------------------------------------------------ -->
-    <div data-pagina="giornata">
+    <!-- PRIVATI ------------------------------------------------------- -->
+    <div data-pagina="privati">
       <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
-        <h1 id="titoloGiornata">Giornata</h1>
-        <div style="display:flex; gap:10px; align-items:center">
-          <label for="dataGiornata" style="font-size:13px">Data</label>
-          <input type="date" id="dataGiornata" style="width:auto">
+        <h1 id="titoloPrivati">Eventi privati</h1>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <label for="mesePrivati" style="font-size:13px">Mese</label>
+          <input type="month" id="mesePrivati" style="width:auto">
+          <button type="button" class="azione piena" id="btnNuovoPrivato">Nuova giornata</button>
         </div>
       </div>
 
-      <div class="griglia4" style="margin-bottom:22px">
-        <div class="tessera"><div class="eticchetta">Iscritti</div><div class="cifra" id="gIscritti">0</div></div>
-        <div class="tessera spicca"><div class="eticchetta">Presenti</div><div class="cifra" id="gPresenti">0</div></div>
-        <div class="tessera"><div class="eticchetta">Turni-insegnante</div><div class="cifra" id="gInsegnanti">0</div></div>
-        <div class="tessera buona"><div class="eticchetta">Utile giornata</div><div class="cifra" id="gUtile">€ 0</div></div>
-      </div>
-
-      <div class="fila" style="margin-bottom:22px">
-        <div class="carta" style="flex:999 1 420px">
-          <h2>Turni</h2>
-          <div class="scorri">
-            <table>
-              <thead>
-                <tr><th>Turno</th><th>Iscritti</th><th>Presenti</th><th>Insegnanti</th><th>Docenza</th></tr>
-              </thead>
-              <tbody id="corpoTurni"></tbody>
-              <tfoot><tr id="piediTurni"></tr></tfoot>
-            </table>
-          </div>
-          <div class="campo" style="margin-top:18px">
-            <label for="oreDipendenti">Ore dipendenti della giornata</label>
-            <input type="text" id="oreDipendenti" inputmode="decimal" style="width:100px">
-          </div>
-          <button type="button" class="azione piena" id="btnSalvaGiornata">Salva la giornata</button>
-        </div>
-
-        <div class="carta" style="flex:1 1 320px">
-          <h2>Conto della giornata</h2>
-          <div id="contoGiornata"></div>
-          <h3 style="margin-top:22px; font-size:16px">Costi straordinari</h3>
-          <div id="elencoExtra"></div>
-          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px">
-            <input type="text" id="extraDescrizione" placeholder="Descrizione" style="flex:2 1 140px">
-            <input type="text" id="extraImporto" placeholder="€" inputmode="decimal" style="flex:1 1 80px">
-            <button type="button" class="azione" id="btnAggiungiExtra">Aggiungi</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="carta">
-        <h2>Partecipanti</h2>
-        <div class="scorri">
-          <table>
-            <thead>
-              <tr><th>Nome</th><th>Turno</th><th>Prenotati</th><th>Presenti</th><th>Stato</th><th>Newsletter</th></tr>
-            </thead>
-            <tbody id="corpoIscrizioni"></tbody>
-          </table>
-        </div>
-        <p id="nessunIscritto" class="nascosto" style="color:var(--tenue); font-size:14px; margin-top:14px">
-          Nessuna iscrizione per questa data. Caricale dalla sezione Iscritti.
-        </p>
-      </div>
-    </div>
-
-    <!-- MESE ---------------------------------------------------------- -->
-    <div data-pagina="mese" class="nascosto">
-      <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
-        <h1>Rendiconto del mese</h1>
-        <div style="display:flex; gap:10px; align-items:center">
-          <label for="meseScelto" style="font-size:13px">Mese</label>
-          <input type="month" id="meseScelto" style="width:auto">
-        </div>
-      </div>
-
-      <div class="griglia4" style="margin-bottom:22px">
-        <div class="tessera"><div class="eticchetta">Presenti</div><div class="cifra" id="mPresenti">0</div></div>
-        <div class="tessera"><div class="eticchetta">Ricavi</div><div class="cifra" id="mRicavi">€ 0</div></div>
-        <div class="tessera spicca"><div class="eticchetta">Ad Alfredo</div><div class="cifra" id="mAlfredo">€ 0</div></div>
-        <div class="tessera buona"><div class="eticchetta">Al Village</div><div class="cifra" id="mVillage">€ 0</div></div>
-      </div>
-
-      <div class="fila">
-        <div class="carta" style="flex:1 1 320px">
-          <h2>Dal lordo alla divisione</h2>
-          <div id="contoMese"></div>
-          <div class="campo" style="margin-top:18px">
-            <label for="giorniSponsor">Giorni di sponsorizzata</label>
-            <input type="text" id="giorniSponsor" inputmode="numeric" style="width:90px">
-          </div>
-          <button type="button" class="azione" id="btnRicalcolaMese">Ricalcola</button>
-        </div>
-
-        <div class="carta" style="flex:999 1 420px">
+      <!-- elenco -->
+      <div id="elencoPrivati">
+        <div class="carta">
           <h2>Giornate del mese</h2>
-          <div class="scorri">
-            <table>
-              <thead><tr><th>Data</th><th>Iscritti</th><th>Presenti</th><th>Ricavi</th><th>Utile</th></tr></thead>
-              <tbody id="corpoMese"></tbody>
-            </table>
+          <div id="righePrivati"></div>
+        </div>
+      </div>
+
+      <!-- scheda giornata -->
+      <div id="schedaPrivato" class="nascosto">
+        <div class="fila" style="align-items:flex-start">
+
+          <div style="flex:999 1 420px; min-width:0; display:flex; flex-direction:column; gap:18px">
+
+            <div class="carta">
+              <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px">
+                <h2 style="margin:0">Incasso</h2>
+                <span class="pastiglia" style="background:rgba(169,201,166,.25); color:#C9E0C6">incassa CCC</span>
+              </div>
+              <div class="campo"><label for="pvData">Data</label><input type="date" id="pvData" style="width:auto"></div>
+              <div class="campo" style="margin-bottom:4px">
+                <label for="pvOspiti">Ospiti</label>
+                <input type="text" id="pvOspiti" inputmode="numeric" style="width:90px">
+              </div>
+              <div id="pvSuggerimento" class="nascosto" style="text-align:right; margin-bottom:14px">
+                <button type="button" id="btnUsaQR" class="azione"
+                        style="min-height:32px; padding:0 12px; font-size:12px; font-weight:400"></button>
+              </div>
+              <div class="campo"><label for="pvPrezzo">A testa, IVA inclusa</label><input type="text" id="pvPrezzo" inputmode="decimal" style="width:120px"></div>
+              <div style="background:rgba(163,117,74,.32); border-radius:12px; padding:14px; display:flex; align-items:center; justify-content:space-between; gap:12px">
+                <span style="font-size:14px; color:#F0DAD5">Totale incassato</span>
+                <strong class="conto-grande" id="pvIncasso">€ 0,00</strong>
+              </div>
+            </div>
+
+            <div class="carta" style="box-shadow:inset 0 0 0 1px rgba(242,167,159,.4)">
+              <h2 style="color:var(--salmone)">Costi MML</h2>
+              <div class="campo" style="margin-bottom:4px">
+                <label for="pvMateriale">Materiale, a ospite</label>
+                <input type="text" id="pvMateriale" inputmode="decimal" style="width:110px">
+              </div>
+              <div class="conticino" id="pvCalcMateriale"></div>
+
+              <div class="campo"><label for="pvInsegnanti">Insegnanti</label><input type="text" id="pvInsegnanti" inputmode="numeric" style="width:80px"></div>
+              <div class="campo"><label for="pvOreInsegnante">Ore</label><input type="text" id="pvOreInsegnante" inputmode="decimal" style="width:80px"></div>
+              <div class="campo" style="margin-bottom:4px">
+                <label for="pvCostoInsegnante">Costo orario</label>
+                <input type="text" id="pvCostoInsegnante" inputmode="decimal" style="width:110px">
+              </div>
+              <div class="conticino" id="pvCalcDocenza"></div>
+
+              <div style="border-top:1px solid rgba(242,167,159,.35); padding-top:14px; display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+                <span style="font-size:13px; letter-spacing:.08em; color:#F7C7C1">TOTALE MML</span>
+                <strong style="font-family:Fraunces,serif; font-size:26px; font-weight:800; color:var(--salmone)" id="pvCostiMML">€ 0,00</strong>
+              </div>
+            </div>
+
+            <div class="carta" style="box-shadow:inset 0 0 0 1px rgba(169,201,166,.4)">
+              <h2 style="color:var(--salvia)">Costi CCC</h2>
+              <div class="campo" style="margin-bottom:4px">
+                <label for="pvFood">Food, a ospite</label>
+                <input type="text" id="pvFood" inputmode="decimal" style="width:110px">
+              </div>
+              <div class="conticino" id="pvCalcFood"></div>
+
+              <div class="campo"><label for="pvPersonale">Personale</label><input type="text" id="pvPersonale" inputmode="numeric" style="width:80px"></div>
+              <div class="campo"><label for="pvOrePersonale">Ore</label><input type="text" id="pvOrePersonale" inputmode="decimal" style="width:80px"></div>
+              <div class="campo" style="margin-bottom:4px">
+                <label for="pvCostoPersonale">Costo orario</label>
+                <input type="text" id="pvCostoPersonale" inputmode="decimal" style="width:110px">
+              </div>
+              <div class="conticino" id="pvCalcPersonale"></div>
+
+              <div style="border-top:1px solid rgba(169,201,166,.35); padding-top:14px; display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+                <span style="font-size:13px; letter-spacing:.08em; color:#C9E0C6">TOTALE CCC</span>
+                <strong style="font-family:Fraunces,serif; font-size:26px; font-weight:800; color:var(--salvia)" id="pvCostiCCC">€ 0,00</strong>
+              </div>
+            </div>
+
+            <div class="carta">
+              <h2>Note</h2>
+              <textarea id="pvNote" placeholder="Com'è andata, cosa cambiare la prossima volta…"></textarea>
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap">
+              <button type="button" class="azione piena" id="btnSalvaPrivato">Salva la giornata</button>
+              <button type="button" class="azione" id="btnChiudiPrivato">Torna all'elenco</button>
+              <button type="button" class="azione nascosto" id="btnEliminaPrivato" style="color:#F2A79F; border-color:rgba(242,167,159,.5)">Elimina</button>
+            </div>
           </div>
-          <div style="display:flex; flex-wrap:wrap; gap:14px; margin-top:20px">
-            <div class="tessera" style="flex:1 1 180px"><div class="eticchetta">Tasso di presenza</div><div class="cifra" id="mTasso">0%</div></div>
-            <div class="tessera" style="flex:1 1 180px"><div class="eticchetta">Consensi newsletter</div><div class="cifra" id="mConsensi">0</div></div>
+
+          <div style="flex:1 1 300px; min-width:0; display:flex; flex-direction:column; gap:18px">
+            <div class="carta">
+              <h2>Il conto</h2>
+              <div id="pvConto"></div>
+            </div>
+            <div class="carta" style="box-shadow:inset 0 0 0 1px rgba(169,201,166,.55)">
+              <h3 style="color:var(--salvia)">CCC</h3>
+              <div id="pvBoxCcc"></div>
+            </div>
+            <div class="carta" style="box-shadow:inset 0 0 0 1px rgba(242,167,159,.55)">
+              <h3 style="color:var(--salmone)">MML</h3>
+              <div id="pvBoxMml"></div>
+            </div>
           </div>
+
+        </div>
+
+        <div class="carta" style="margin-top:18px">
+          <h2 style="margin-bottom:6px">Chi deve a chi, e perché</h2>
+          <p style="margin:0 0 20px; font-size:14px; color:var(--tenue)">Qui incassa tutto il Crazy Cat, quindi il movimento è sempre nello stesso verso.</p>
+          <div id="pvPerche"></div>
         </div>
       </div>
     </div>
+
 
     <!-- ISCRITTI ------------------------------------------------------ -->
     <div data-pagina="iscritti" class="nascosto">
@@ -503,40 +536,123 @@
         </div>
       </div>
 
-      <div class="griglia4" style="margin-bottom:22px">
-        <div class="tessera buona"><div class="eticchetta">Spetta a CCC</div><div class="cifra" id="rsCcc">€ 0</div></div>
-        <div class="tessera spicca"><div class="eticchetta">Spetta a MML</div><div class="cifra" id="rsMml">€ 0</div></div>
-        <div class="tessera" style="background:var(--legno)"><div class="eticchetta" id="rsVersoEt">Saldo</div><div class="cifra" id="rsSaldo">€ 0</div></div>
+      <div class="fila" style="margin-bottom:22px">
+        <div class="tessera buona" style="flex:1 1 240px"><div class="eticchetta">Spetta a CCC</div><div class="cifra" id="rsCcc">€ 0</div></div>
+        <div class="tessera spicca" style="flex:1 1 240px"><div class="eticchetta">Spetta a MML</div><div class="cifra" id="rsMml">€ 0</div></div>
+        <div class="tessera" style="flex:1 1 240px; background:var(--legno)"><div class="eticchetta" id="rsVersoEt">Saldo</div><div class="cifra" id="rsSaldo">€ 0</div></div>
       </div>
 
-      <div class="carta" style="margin-bottom:22px">
-        <h2>Eventi aziendali</h2>
-        <div class="scorri">
-          <table>
-            <thead>
-              <tr><th>Data</th><th>Azienda</th><th>Pers.</th><th>Totale</th><th>CCC</th><th>MML</th><th>Saldo</th><th></th></tr>
-            </thead>
-            <tbody id="rsCorpoAziendali"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="fila">
-        <div class="carta" style="flex:999 1 400px">
-          <h2>Laboratori privati</h2>
-          <div id="rsPrivati"></div>
-          <div class="campo" style="margin-top:18px; margin-bottom:0">
-            <label for="rsGiorniSponsor">Giorni di sponsorizzata</label>
-            <input type="text" id="rsGiorniSponsor" inputmode="numeric" style="width:90px">
+      <!-- aziendali, richiudibile -->
+      <div class="carta" style="margin-bottom:18px">
+        <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between">
+          <div style="min-width:0">
+            <h2 style="margin:0 0 4px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Eventi aziendali</h2>
+            <div style="font-size:13px; color:var(--tenue)" id="rsAzSommario">—</div>
+          </div>
+          <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap">
+            <div style="text-align:right"><div style="font-size:11px; color:var(--salvia)">CCC</div><strong style="font-family:Fraunces,serif; font-size:22px; color:var(--salvia)" id="rsAzCcc">€ 0</strong></div>
+            <div style="text-align:right"><div style="font-size:11px; color:var(--salmone)">MML</div><strong style="font-family:Fraunces,serif; font-size:22px; color:var(--salmone)" id="rsAzMml">€ 0</strong></div>
+            <button type="button" class="azione" id="btnApriAz" aria-expanded="false">Apri l'elenco ▾</button>
           </div>
         </div>
-        <div class="carta" style="flex:1 1 280px">
-          <h2>Il mese in tutto</h2>
-          <div id="rsTotali"></div>
-          <button type="button" class="azione" id="btnScaricaResoconto" style="width:100%; margin-top:20px">Scarica il resoconto</button>
+        <div id="rsElencoAz" class="nascosto" style="margin-top:18px">
+          <div class="scorri" style="background:rgba(251,243,238,.05); border-radius:14px; padding:6px 4px">
+            <table>
+              <thead><tr><th>Data</th><th>Azienda</th><th>Pers.</th><th>Totale</th><th>CCC</th><th>MML</th><th>Saldo</th><th></th></tr></thead>
+              <tbody id="rsCorpoAz"></tbody>
+            </table>
+          </div>
         </div>
       </div>
+
+      <!-- privati, richiudibile -->
+      <div class="carta" style="margin-bottom:18px">
+        <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between">
+          <div style="min-width:0">
+            <h2 style="margin:0 0 4px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Eventi privati</h2>
+            <div style="font-size:13px; color:var(--tenue)" id="rsPvSommario">—</div>
+          </div>
+          <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap">
+            <div style="text-align:right"><div style="font-size:11px; color:var(--salvia)">CCC</div><strong style="font-family:Fraunces,serif; font-size:22px; color:var(--salvia)" id="rsPvCcc">€ 0</strong></div>
+            <div style="text-align:right"><div style="font-size:11px; color:var(--salmone)">MML</div><strong style="font-family:Fraunces,serif; font-size:22px; color:var(--salmone)" id="rsPvMml">€ 0</strong></div>
+            <button type="button" class="azione" id="btnApriPv" aria-expanded="false">Apri l'elenco ▾</button>
+          </div>
+        </div>
+        <div id="rsElencoPv" class="nascosto" style="margin-top:18px">
+          <div class="scorri" style="background:rgba(251,243,238,.05); border-radius:14px; padding:6px 4px">
+            <table>
+              <thead><tr><th>Giornata</th><th>Ospiti</th><th>Incasso</th><th>Costi MML</th><th>Costi CCC</th><th>Utile</th><th></th></tr></thead>
+              <tbody id="rsCorpoPv"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- costi del mese -->
+      <div class="carta" style="margin-bottom:18px">
+        <h2 style="margin-bottom:6px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Costi del mese</h2>
+        <p style="margin:0 0 20px; font-size:14px; color:var(--tenue)">Quelli che non appartengono a una giornata sola. Si dividono a metà, e chi li ha pagati si riprende la metà dell'altro.</p>
+
+        <div class="fila">
+          <div class="riquadro-costo">
+            <div class="testa-costo"><h3>Costi Village</h3><span class="pastiglia paga-ccc" id="rsPagaVillage">paga CCC</span></div>
+            <div class="campo" style="margin-bottom:8px">
+              <label for="rsVillage">A forfait</label>
+              <input type="text" id="rsVillage" inputmode="decimal" style="width:118px">
+            </div>
+            <div style="font-size:12px; color:var(--tenue); line-height:1.5">affitto, utenze, pulizie</div>
+          </div>
+
+          <div class="riquadro-costo">
+            <div class="testa-costo"><h3>Sponsorizzata</h3><span class="pastiglia paga-mml" id="rsPagaSponsor">paga MML</span></div>
+            <div class="campo" style="margin-bottom:10px">
+              <label for="rsSponsorGiorno">Al giorno</label>
+              <input type="text" id="rsSponsorGiorno" inputmode="decimal" style="width:100px">
+            </div>
+            <div class="campo" style="margin-bottom:10px">
+              <label for="rsSponsorGiorni">Giorni</label>
+              <input type="text" id="rsSponsorGiorni" inputmode="numeric" style="width:100px">
+            </div>
+            <div class="riga-totale"><span>totale</span><strong id="rsSponsorTot">€ 0</strong></div>
+          </div>
+
+          <div class="riquadro-costo">
+            <div class="testa-costo"><h3>Commissioni Superb</h3><span class="pastiglia paga-ccc" id="rsPagaSuperb">paga CCC</span></div>
+            <div class="campo" style="margin-bottom:10px">
+              <label for="rsSuperbPerc">Percentuale</label>
+              <input type="text" id="rsSuperbPerc" inputmode="decimal" style="width:100px">
+            </div>
+            <div style="font-size:12px; color:var(--tenue); line-height:1.5; margin-bottom:10px" id="rsSuperbBase">sull'incasso dei privati</div>
+            <div class="riga-totale"><span>totale</span><strong id="rsSuperbTot">€ 0</strong></div>
+          </div>
+
+          <div class="riquadro-costo">
+            <div class="testa-costo"><h3>Gestione del format</h3><span class="pastiglia paga-mml" id="rsPagaGestione">paga MML</span></div>
+            <div class="campo" style="margin-bottom:8px">
+              <label for="rsGestione">Al mese</label>
+              <input type="text" id="rsGestione" inputmode="decimal" style="width:118px">
+            </div>
+            <div style="font-size:12px; color:var(--tenue); line-height:1.5">metti 0 se non è più dovuta</div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px; padding-top:18px; border-top:1px solid rgba(251,243,238,.2); display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between">
+          <span style="font-size:14px; color:#F0DAD5">In tutto, da dividere a metà</span>
+          <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap">
+            <strong style="font-family:Fraunces,serif; font-size:26px" id="rsCostiTot">€ 0</strong>
+            <button type="button" class="azione piena" id="btnSalvaCosti">Salva i costi</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- chi deve a chi -->
+      <div class="carta">
+        <h2 style="margin-bottom:20px">Chi deve a chi, e perché</h2>
+        <div id="rsPerche"></div>
+        <button type="button" class="azione" id="btnScaricaResoconto" style="width:100%; margin-top:20px">Scarica il resoconto</button>
+      </div>
     </div>
+
 
     <!-- IMPOSTAZIONI -------------------------------------------------- -->
     <div data-pagina="impostazioni" class="nascosto">
@@ -599,9 +715,7 @@
     n.classList.toggle('nascosto', !messaggio);
     el('token').value = '';
   }
-  var giornata = null;
   var impostazioni = {};
-  var extraLocali = [];
 
   var el = function (id) { return document.getElementById(id); };
   var euro = function (n) {
@@ -663,9 +777,8 @@
     el('ingresso').classList.add('nascosto');
     el('app').classList.add('nascosto');
     el('scelta').classList.remove('nascosto');
-    el('dataGiornata').value = oggiISO();
     el('dataImport').value = oggiISO();
-    el('meseScelto').value = oggiISO().slice(0, 7);
+    el('mesePrivati').value = oggiISO().slice(0, 7);
     el('meseAziendali').value = oggiISO().slice(0, 7);
     el('meseResoconto').value = oggiISO().slice(0, 7);
     el('consensiDa').value = oggiISO().slice(0, 8) + '01';
@@ -697,7 +810,7 @@
       b.classList.toggle('nascosto', suo !== 'tutti' && suo !== modo);
     });
 
-    if (modo === 'privati') { vaiA('giornata'); caricaGiornata(); }
+    if (modo === 'privati') { vaiA('privati'); caricaPrivati(); }
     else if (modo === 'aziendali') { vaiA('aziendali'); caricaAziendali(); }
     else { vaiA('resoconti'); caricaResoconto(); }
   }
@@ -718,275 +831,271 @@
     b.addEventListener('click', function () {
       var vista = b.getAttribute('data-vista');
       vaiA(vista);
-      if (vista === 'mese') caricaMese();
+      if (vista === 'privati') caricaPrivati();
       if (vista === 'aziendali') caricaAziendali();
       if (vista === 'resoconti') caricaResoconto();
     });
   });
 
-  /* --------------------------------------------------------- giornata */
-
-  el('dataGiornata').addEventListener('change', caricaGiornata);
-
-  function caricaGiornata() {
-    chiama({ azione: 'giornata', data: el('dataGiornata').value })
-      .then(function (r) {
-        giornata = r;
-        impostazioni = r.impostazioni;
-        extraLocali = r.extra.slice();
-        disegnaGiornata();
-      })
-      .catch(function (err) { avvisa('Non riesco a leggere la giornata: ' + err.message, true); });
-  }
-
-  function disegnaGiornata() {
-    var d = new Date(giornata.data + 'T12:00:00');
-    var testo = d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
-    el('titoloGiornata').textContent = testo.charAt(0).toUpperCase() + testo.slice(1);
-
-    var c = giornata.conto;
-    el('gIscritti').textContent = c.iscritti;
-    el('gPresenti').textContent = c.presenti;
-    el('gInsegnanti').textContent = c.turniInsegnante;
-    el('gUtile').textContent = euroTondo(c.utile);
-    el('oreDipendenti').value = giornata.oreDipendenti;
-
-    // turni
-    var durata = Number(impostazioni.durata_turno_ore) || 1.5;
-    var oraIns = Number(impostazioni.alfredo_insegnante_ora) || 20;
-    var corpo = el('corpoTurni');
-    corpo.innerHTML = '';
-    giornata.turni.forEach(function (t, i) {
-      var tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td>' + t.orario + '</td>' +
-        '<td>' + t.iscritti + '</td>' +
-        '<td>' + t.presenti + '</td>' +
-        '<td><input type="text" inputmode="numeric" value="' + t.insegnanti +
-          '" data-turno="' + i + '" aria-label="Insegnanti turno ' + t.orario + '"></td>' +
-        '<td data-docenza="' + i + '">' + euro(t.insegnanti * durata * oraIns) + '</td>';
-      corpo.appendChild(tr);
-    });
-    if (!giornata.turni.length) {
-      corpo.innerHTML = '<tr><td colspan="5" style="color:var(--tenue)">Nessun turno standard per questo giorno. ' +
-        'Aggiungi i turni nelle impostazioni, oppure carica delle iscrizioni con un orario.</td></tr>';
-    }
-    aggiornaPiediTurni();
-
-    Array.prototype.forEach.call(corpo.querySelectorAll('input[data-turno]'), function (inp) {
-      inp.addEventListener('input', function () {
-        var i = Number(inp.getAttribute('data-turno'));
-        var n = Math.max(0, Math.round(Number(inp.value.replace(',', '.')) || 0));
-        giornata.turni[i].insegnanti = n;
-        var cella = corpo.querySelector('[data-docenza="' + i + '"]');
-        if (cella) cella.textContent = euro(n * durata * oraIns);
-        aggiornaPiediTurni();
-        ricalcolaLocale();
-      });
-    });
-
-    // iscrizioni
-    var ci = el('corpoIscrizioni');
-    ci.innerHTML = '';
-    el('nessunIscritto').classList.toggle('nascosto', giornata.iscrizioni.length > 0);
-    giornata.iscrizioni.forEach(function (r) {
-      var classe = r.stato === 'Presente' ? 'presente'
-                 : r.stato === 'Assente' ? 'assente'
-                 : r.stato === 'Da verificare' ? 'verifica' : 'attesa';
-      var tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td>' + escapeHtml(r.nome) + '<br><span style="font-size:12px;color:var(--tenue)">' +
-          escapeHtml(r.email || '') + '</span></td>' +
-        '<td>' + (r.turno || '—') + '</td>' +
-        '<td>' + r.prenotati + '</td>' +
-        '<td><input type="text" inputmode="numeric" value="' + r.presenti +
-          '" data-presenza="' + r.id + '" aria-label="Presenti di ' + escapeHtml(r.nome) + '"></td>' +
-        '<td><span class="pastiglia ' + classe + '">' + r.stato.toUpperCase() + '</span></td>' +
-        '<td>' + (r.newsletter ? 'sì' : '—') + '</td>';
-      ci.appendChild(tr);
-    });
-
-    Array.prototype.forEach.call(ci.querySelectorAll('input[data-presenza]'), function (inp) {
-      inp.addEventListener('change', function () {
-        var id = inp.getAttribute('data-presenza');
-        var n = Math.max(0, Math.round(Number(inp.value.replace(',', '.')) || 0));
-        chiama({ azione: 'presenza', id: id, presenti: n })
-          .then(function () { avvisa('Presenza aggiornata.'); caricaGiornata(); })
-          .catch(function (err) { avvisa('Non salvato: ' + err.message, true); });
-      });
-    });
-
-    disegnaExtra();
-    disegnaConto(giornata.conto);
-  }
-
-  function aggiornaPiediTurni() {
-    var durata = Number(impostazioni.durata_turno_ore) || 1.5;
-    var oraIns = Number(impostazioni.alfredo_insegnante_ora) || 20;
-    var tot = giornata.turni.reduce(function (s, t) {
-      return { i: s.i + t.iscritti, p: s.p + t.presenti, n: s.n + t.insegnanti };
-    }, { i: 0, p: 0, n: 0 });
-    el('piediTurni').innerHTML =
-      '<td>Totale</td><td>' + tot.i + '</td><td>' + tot.p + '</td><td>' + tot.n + '</td>' +
-      '<td>' + euro(tot.n * durata * oraIns) + '</td>';
-  }
-
-  function disegnaExtra() {
-    var n = el('elencoExtra');
-    n.innerHTML = '';
-    if (!extraLocali.length) {
-      n.innerHTML = '<p style="font-size:13px;color:var(--tenue);margin:0">Nessuno.</p>';
-      return;
-    }
-    extraLocali.forEach(function (e, i) {
-      var riga = document.createElement('div');
-      riga.className = 'voce';
-      riga.innerHTML = '<span>' + escapeHtml(e.descrizione) + '</span>' +
-        '<span><strong>' + euro(e.importo) + '</strong> ' +
-        '<button type="button" class="azione" style="min-height:30px;padding:0 10px;margin-left:8px" ' +
-        'data-togli="' + i + '" aria-label="Togli ' + escapeHtml(e.descrizione) + '">×</button></span>';
-      n.appendChild(riga);
-    });
-    Array.prototype.forEach.call(n.querySelectorAll('[data-togli]'), function (b) {
-      b.addEventListener('click', function () {
-        extraLocali.splice(Number(b.getAttribute('data-togli')), 1);
-        disegnaExtra(); ricalcolaLocale();
-      });
-    });
-  }
-
-  el('btnAggiungiExtra').addEventListener('click', function () {
-    var d = el('extraDescrizione').value.trim();
-    var imp = Number(el('extraImporto').value.replace(',', '.')) || 0;
-    if (!d || !imp) { avvisa('Servono descrizione e importo.', true); return; }
-    extraLocali.push({ descrizione: d, importo: imp, turno: '', aCarico: '', documento: '' });
-    el('extraDescrizione').value = ''; el('extraImporto').value = '';
-    disegnaExtra(); ricalcolaLocale();
-  });
-
-  el('oreDipendenti').addEventListener('input', ricalcolaLocale);
-
-  /** Ricalcolo immediato in pagina, prima del salvataggio. */
-  function ricalcolaLocale() {
-    var i = impostazioni;
-    var prezzo = Number(i.prezzo_workshop) || 0;
-    var quota = Number(i.superb_quota_iscritto) || 0;
-    var perc = (Number(i.superb_percentuale) || 0) / 100;
-    var durata = Number(i.durata_turno_ore) || 1.5;
-    var oraIns = Number(i.alfredo_insegnante_ora) || 0;
-    var ceramica = Number(i.alfredo_ceramica_persona) || 0;
-    var cibo = Number(i.alba_cibo_persona) || 0;
-    var oraDip = Number(i.alba_dipendenti_ora) || 0;
-
-    var presenti = giornata.iscrizioni.reduce(function (s, r) { return s + r.presenti; }, 0);
-    var iscritti = giornata.iscrizioni.reduce(function (s, r) { return s + r.prenotati; }, 0);
-    var base = String(i.ceramica_su) === 'iscritti' ? iscritti : presenti;
-    var turniIns = giornata.turni.reduce(function (s, t) { return s + t.insegnanti; }, 0);
-    var ore = Number(String(el('oreDipendenti').value).replace(',', '.')) || 0;
-
-    var c = {
-      iscritti: iscritti,
-      presenti: presenti,
-      turniInsegnante: turniIns,
-      ricavi: presenti * prezzo,
-      costoSuperb: presenti * (prezzo + quota) * perc,
-      costoDocenza: turniIns * durata * oraIns,
-      costoCeramica: base * ceramica,
-      costoCibo: presenti * cibo,
-      costoDipendenti: ore * oraDip,
-      costoExtra: extraLocali.reduce(function (s, e) { return s + e.importo; }, 0)
-    };
-    c.utile = c.ricavi - c.costoSuperb - c.costoDocenza - c.costoCeramica
-            - c.costoCibo - c.costoDipendenti - c.costoExtra;
-
-    el('gIscritti').textContent = c.iscritti;
-    el('gPresenti').textContent = c.presenti;
-    el('gInsegnanti').textContent = c.turniInsegnante;
-    el('gUtile').textContent = euroTondo(c.utile);
-    disegnaConto(c);
-  }
-
-  function disegnaConto(c) {
-    el('contoGiornata').innerHTML =
-      voce('Ricavi · ' + c.presenti + ' × ' + euro(impostazioni.prezzo_workshop), c.ricavi) +
-      voce('Superb', -c.costoSuperb) +
-      voce('Docenza · ' + c.turniInsegnante + ' turni-insegnante', -c.costoDocenza) +
-      voce('Ceramica', -c.costoCeramica) +
-      voce('Cibo e bevande', -c.costoCibo) +
-      voce('Dipendenti', -c.costoDipendenti) +
-      (c.costoExtra ? voce('Costi straordinari', -c.costoExtra) : '') +
-      '<div class="voce somma"><span>Utile</span><span>' + euro(c.utile) + '</span></div>';
-  }
+  /* ---------------------------------------------------------- in comune */
 
   function voce(etichetta, valore) {
     return '<div class="voce"><span style="color:#F0DAD5">' + etichetta + '</span>' +
            '<strong>' + (valore < 0 ? '− ' + euro(-valore) : euro(valore)) + '</strong></div>';
   }
 
-  el('btnSalvaGiornata').addEventListener('click', function () {
-    var b = el('btnSalvaGiornata');
-    b.disabled = true; b.textContent = 'Salvo…';
-    chiama({
-      azione: 'salvaGiornata',
-      data: giornata.data,
-      oreDipendenti: String(el('oreDipendenti').value).replace(',', '.'),
-      turni: giornata.turni.map(function (t) {
-        return { orario: t.orario, insegnanti: t.insegnanti, attivo: t.attivo };
-      }),
-      extra: extraLocali
-    })
+  function numero(id) {
+    return Number(String(el(id).value).replace(',', '.')) || 0;
+  }
+
+  /* --------------------------------------------------------- privati
+
+     Incassa tutto CCC. Ciascuno mette dei costi, se li riprende, e quello
+     che resta si divide a metà. Quindi CCC deve sempre a MML.
+  --------------------------------------------------------------------- */
+
+  var eventiPrivati = [];
+  var privatoCorrente = null;
+  var presenzeQR = {};
+
+  var CAMPI_PV = {
+    pvData: 'data', pvOspiti: 'ospiti', pvPrezzo: 'prezzoTesta',
+    pvMateriale: 'materialePersona', pvInsegnanti: 'insegnanti',
+    pvOreInsegnante: 'oreInsegnante', pvCostoInsegnante: 'costoInsegnanteOra',
+    pvFood: 'foodPersona', pvPersonale: 'personale',
+    pvOrePersonale: 'orePersonale', pvCostoPersonale: 'costoPersonaleOra',
+    pvNote: 'note'
+  };
+  var TESTO_PV = ['data', 'note'];
+
+  el('mesePrivati').addEventListener('change', caricaPrivati);
+
+  function caricaPrivati() {
+    chiama({ azione: 'privati', mese: el('mesePrivati').value })
       .then(function (r) {
-        giornata = r; extraLocali = r.extra.slice();
-        disegnaGiornata(); avvisa('Giornata salvata.');
+        eventiPrivati = r.eventi;
+        impostazioni = r.impostazioni;
+        presenzeQR = r.presenzeQR || {};
+        disegnaElencoPrivati();
+      })
+      .catch(function (err) { avvisa('Non riesco a leggere le giornate: ' + err.message, true); });
+  }
+
+  function disegnaElencoPrivati() {
+    el('schedaPrivato').classList.add('nascosto');
+    el('elencoPrivati').classList.remove('nascosto');
+    el('titoloPrivati').textContent = 'Eventi privati';
+
+    var n = el('righePrivati');
+    n.innerHTML = '';
+    if (!eventiPrivati.length) {
+      n.innerHTML = '<p style="color:var(--tenue); font-size:14px; margin:0">' +
+        'Nessuna giornata in questo mese. Premi "Nuova giornata" per aggiungerne una.</p>';
+      return;
+    }
+
+    eventiPrivati.forEach(function (e, i) {
+      var d = new Date(e.data + 'T12:00:00');
+      var riga = document.createElement('div');
+      riga.className = 'evento-riga';
+      riga.innerHTML =
+        '<div style="min-width:0">' +
+          '<div style="font-weight:700">' +
+            d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }) + '</div>' +
+          '<div style="font-size:12px; color:var(--tenue)">' + e.ospiti + ' ospiti · ' +
+            euroTondo(e.conto.incasso) + ' incassati</div>' +
+        '</div>' +
+        '<div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap">' +
+          '<div style="text-align:right"><div style="font-size:11px; color:var(--salvia)">CCC</div>' +
+            '<strong style="font-family:Fraunces,serif; font-size:18px">' + euroTondo(e.conto.spettaCCC) + '</strong></div>' +
+          '<div style="text-align:right"><div style="font-size:11px; color:var(--salmone)">MML</div>' +
+            '<strong style="font-family:Fraunces,serif; font-size:18px">' + euroTondo(e.conto.spettaMML) + '</strong></div>' +
+          '<button type="button" class="azione" data-apri-pv="' + i + '">Apri</button>' +
+        '</div>';
+      n.appendChild(riga);
+    });
+
+    Array.prototype.forEach.call(n.querySelectorAll('[data-apri-pv]'), function (b) {
+      b.addEventListener('click', function () {
+        apriPrivato(eventiPrivati[Number(b.getAttribute('data-apri-pv'))]);
+      });
+    });
+  }
+
+  el('btnNuovoPrivato').addEventListener('click', function () {
+    var i = impostazioni;
+    apriPrivato({
+      id: '', data: oggiISO(), ospiti: 0,
+      prezzoTesta: Number(i.prezzo_workshop) || 55,
+      materialePersona: Number(i.alfredo_ceramica_persona) || 3,
+      insegnanti: 1,
+      oreInsegnante: Number(i.durata_turno_ore) || 1.5,
+      costoInsegnanteOra: Number(i.alfredo_insegnante_ora) || 20,
+      foodPersona: Number(i.alba_cibo_persona) || 6,
+      personale: 1,
+      orePersonale: Number(i.alba_ore_giornata) || 10,
+      costoPersonaleOra: Number(i.alba_dipendenti_ora) || 20,
+      note: ''
+    });
+  });
+
+  function apriPrivato(e) {
+    privatoCorrente = e;
+    Object.keys(CAMPI_PV).forEach(function (id) {
+      var v = e[CAMPI_PV[id]];
+      el(id).value = (v === undefined || v === null) ? '' : v;
+    });
+    el('btnEliminaPrivato').classList.toggle('nascosto', !e.id);
+    el('titoloPrivati').textContent = e.id ? 'Giornata' : 'Nuova giornata';
+    el('elencoPrivati').classList.add('nascosto');
+    el('schedaPrivato').classList.remove('nascosto');
+    ricalcolaPrivato();
+  }
+
+  Object.keys(CAMPI_PV).forEach(function (id) {
+    el(id).addEventListener('input', ricalcolaPrivato);
+    el(id).addEventListener('change', ricalcolaPrivato);
+  });
+
+  el('btnUsaQR').addEventListener('click', function () {
+    var n = presenzeQR[el('pvData').value];
+    if (n) { el('pvOspiti').value = n; ricalcolaPrivato(); }
+  });
+
+  function leggiFormPrivato() {
+    var e = { id: privatoCorrente ? privatoCorrente.id : '' };
+    Object.keys(CAMPI_PV).forEach(function (id) {
+      var campo = CAMPI_PV[id];
+      e[campo] = TESTO_PV.indexOf(campo) !== -1 ? el(id).value : numero(id);
+    });
+    return e;
+  }
+
+  /** Stessa formula del server, per vedere i numeri mentre scrivi. */
+  function contoPrivatoDi(e) {
+    var incasso = e.ospiti * e.prezzoTesta;
+    var materiale = e.ospiti * e.materialePersona;
+    var docenza = e.insegnanti * e.oreInsegnante * e.costoInsegnanteOra;
+    var costiMML = materiale + docenza;
+    var food = e.ospiti * e.foodPersona;
+    var personale = e.personale * e.orePersonale * e.costoPersonaleOra;
+    var costiCCC = food + personale;
+    var utile = incasso - costiMML - costiCCC;
+    var meta = utile / 2;
+    return {
+      incasso: incasso, materiale: materiale, docenza: docenza, costiMML: costiMML,
+      food: food, personale: personale, costiCCC: costiCCC,
+      utile: utile, meta: meta,
+      spettaCCC: costiCCC + meta, spettaMML: costiMML + meta,
+      saldo: -(costiMML + meta)
+    };
+  }
+
+  function ricalcolaPrivato() {
+    var e = leggiFormPrivato();
+    var c = contoPrivatoDi(e);
+
+    el('pvIncasso').textContent = euro(c.incasso);
+    el('pvCostiMML').textContent = euro(c.costiMML);
+    el('pvCostiCCC').textContent = euro(c.costiCCC);
+
+    // le righine sotto i campi: fanno vedere la moltiplicazione mentre scrivi,
+    // così una cifra sbagliata si nota subito
+    el('pvCalcMateriale').textContent = '× ' + e.ospiti + ' ospiti = ' + euro(c.materiale);
+    el('pvCalcDocenza').textContent = e.insegnanti + ' × ' + e.oreInsegnante + ' h × ' +
+      euro(e.costoInsegnanteOra) + ' = ' + euro(c.docenza);
+    el('pvCalcFood').textContent = '× ' + e.ospiti + ' ospiti = ' + euro(c.food);
+    el('pvCalcPersonale').textContent = e.personale + ' × ' + e.orePersonale + ' h × ' +
+      euro(e.costoPersonaleOra) + ' = ' + euro(c.personale);
+
+    // il QR ha contato delle presenze per questa data? lo propongo e basta
+    var daQR = presenzeQR[e.data];
+    var suggerisci = daQR && daQR !== e.ospiti;
+    el('pvSuggerimento').classList.toggle('nascosto', !suggerisci);
+    if (suggerisci) {
+      el('btnUsaQR').textContent = 'dal QR risultano ' + daQR + ' presenti · usa';
+    }
+
+    el('pvConto').innerHTML =
+      voce('Incasso · ' + e.ospiti + ' × ' + euro(e.prezzoTesta), c.incasso) +
+      voce('Costi MML', -c.costiMML) +
+      voce('Costi CCC', -c.costiCCC) +
+      '<div class="voce somma"><span>Utile</span><span>' + euro(c.utile) + '</span></div>' +
+      '<div style="display:flex; gap:12px; margin-top:14px">' +
+        '<div style="flex:1; background:rgba(169,201,166,.2); border-radius:12px; padding:12px 14px">' +
+          '<div style="font-size:11px; color:var(--salvia)">CCC</div>' +
+          '<div style="font-family:Fraunces,serif; font-size:22px; font-weight:800">' + euroTondo(c.meta) + '</div></div>' +
+        '<div style="flex:1; background:rgba(242,167,159,.2); border-radius:12px; padding:12px 14px">' +
+          '<div style="font-size:11px; color:var(--salmone)">MML</div>' +
+          '<div style="font-family:Fraunces,serif; font-size:22px; font-weight:800">' + euroTondo(c.meta) + '</div></div>' +
+      '</div>';
+
+    el('pvBoxCcc').innerHTML = boxPrivato(c.costiCCC, c.meta, c.spettaCCC, 'SPETTA A CCC', 'var(--salvia)');
+    el('pvBoxMml').innerHTML = boxPrivato(c.costiMML, c.meta, c.spettaMML, 'SPETTA A MML', 'var(--salmone)');
+
+    el('pvPerche').innerHTML = perchePrivato(c);
+  }
+
+  function boxPrivato(costi, meta, totale, etichetta, colore) {
+    return '<div style="display:flex; flex-direction:column; gap:10px; font-size:14px">' +
+      voce('I suoi costi, indietro', costi) +
+      voce('Metà utile', meta) +
+      '</div><div style="border-top:1px solid rgba(251,243,238,.22); margin-top:16px; padding-top:16px; ' +
+      'display:flex; justify-content:space-between; align-items:baseline; gap:12px">' +
+      '<span style="font-size:12px; letter-spacing:.08em; color:var(--tenue)">' + etichetta + '</span>' +
+      '<span style="font-family:Fraunces,serif; font-size:28px; font-weight:800; color:' + colore + '">' +
+      euro(totale) + '</span></div>';
+  }
+
+  function perchePrivato(c) {
+    var riga = function (titolo, spiega, importo) {
+      return '<div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; ' +
+        'justify-content:space-between; background:rgba(242,167,159,.14); border-radius:12px; ' +
+        'padding:16px 18px; margin-bottom:12px">' +
+        '<span style="flex:1 1 360px; min-width:0; font-size:14px; line-height:1.5; color:#F0DAD5">' +
+        '<strong style="color:var(--panna)">' + titolo + ' · ' + euro(importo) + '</strong><br>' + spiega +
+        '</span><span style="flex:0 0 auto; text-align:right">' +
+        '<span style="display:block; font-size:11px; letter-spacing:.08em; color:var(--salmone)">CCC → MML</span>' +
+        '<strong style="font-family:Fraunces,serif; font-size:24px; color:var(--salmone)">' +
+        euro(importo) + '</strong></span></div>';
+    };
+
+    return riga('Costi di MML', 'Materiale e insegnanti li ha messi lui, e glieli rimborsate dall’incasso.', c.costiMML) +
+      riga('Metà dell’utile', 'L’incasso è arrivato tutto a voi, quindi la sua metà ce l’avete in cassa.', c.meta) +
+      '<div style="margin-top:20px; padding-top:20px; border-top:2px solid rgba(251,243,238,.3); ' +
+      'display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between">' +
+      '<span style="font-size:15px; line-height:1.5; color:#F0DAD5">' +
+      euro(c.costiMML) + ' + ' + euro(c.meta) + ', quindi alla fine</span>' +
+      '<span style="text-align:right"><span style="display:block; font-size:13px; font-weight:600; color:var(--legno-chiaro)">' +
+      'CCC deve a MML</span><strong style="font-family:Fraunces,serif; font-size:36px">' +
+      euro(c.spettaMML) + '</strong></span></div>';
+  }
+
+  el('btnSalvaPrivato').addEventListener('click', function () {
+    var e = leggiFormPrivato();
+    if (!e.data) { avvisa('Serve la data.', true); return; }
+    var b = el('btnSalvaPrivato');
+    b.disabled = true; b.textContent = 'Salvo…';
+    chiama({ azione: 'salvaPrivato', evento: e })
+      .then(function (r) {
+        avvisa('Giornata salvata.');
+        privatoCorrente = r.evento;
+        caricaPrivati();
       })
       .catch(function (err) { avvisa('Non salvata: ' + err.message, true); })
       .finally(function () { b.disabled = false; b.textContent = 'Salva la giornata'; });
   });
 
-  /* ------------------------------------------------------------- mese */
+  el('btnChiudiPrivato').addEventListener('click', disegnaElencoPrivati);
 
-  el('meseScelto').addEventListener('change', caricaMese);
-  el('btnRicalcolaMese').addEventListener('click', caricaMese);
+  el('btnEliminaPrivato').addEventListener('click', function () {
+    if (!privatoCorrente || !privatoCorrente.id) return;
+    if (!confirm('Eliminare questa giornata? Non si torna indietro.')) return;
+    chiama({ azione: 'eliminaPrivato', id: privatoCorrente.id })
+      .then(function () { avvisa('Giornata eliminata.'); caricaPrivati(); })
+      .catch(function (err) { avvisa('Non eliminata: ' + err.message, true); });
+  });
 
-  function caricaMese() {
-    var dati = { azione: 'mese', mese: el('meseScelto').value };
-    var g = el('giorniSponsor').value.trim();
-    if (g) dati.giorniSponsor = g;
-
-    chiama(dati)
-      .then(function (r) {
-        el('mPresenti').textContent = r.presenti;
-        el('mRicavi').textContent = euroTondo(r.ricavi);
-        el('mAlfredo').textContent = euroTondo(r.adAlfredo);
-        el('mVillage').textContent = euroTondo(r.alVillage);
-        el('mTasso').textContent = r.tassoPresenza + '%';
-        el('mConsensi').textContent = r.consensiNewsletter;
-
-        el('contoMese').innerHTML =
-          voce('Utile delle giornate', r.utileGiornate) +
-          voce('Sponsorizzata', -r.sponsor) +
-          voce('Gestione del format', -r.gestione) +
-          voce('Location', -r.location) +
-          '<div class="voce somma"><span>Da dividere</span><span>' + euro(r.utileNetto) + '</span></div>' +
-          voce('Ad Alfredo', r.adAlfredo) +
-          voce('Al Village', r.alVillage);
-
-        var corpo = el('corpoMese');
-        corpo.innerHTML = '';
-        r.giornate.forEach(function (g2) {
-          var tr = document.createElement('tr');
-          var d = new Date(g2.data + 'T12:00:00');
-          tr.innerHTML = '<td>' + d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }) + '</td>' +
-            '<td>' + g2.conto.iscritti + '</td><td>' + g2.conto.presenti + '</td>' +
-            '<td>' + euroTondo(g2.conto.ricavi) + '</td><td>' + euroTondo(g2.conto.utile) + '</td>';
-          corpo.appendChild(tr);
-        });
-        if (!r.giornate.length) {
-          corpo.innerHTML = '<tr><td colspan="5" style="color:var(--tenue)">Nessuna giornata in questo mese.</td></tr>';
-        }
-      })
-      .catch(function (err) { avvisa('Non riesco a leggere il mese: ' + err.message, true); });
-  }
 
   /* --------------------------------------------------------- iscritti */
 
@@ -1061,7 +1170,7 @@
         el('testoImport').value = '';
         el('mappaturaImport').classList.add('nascosto');
         el('btnConfermaImport').classList.add('nascosto');
-        if (el('dataImport').value === el('dataGiornata').value) caricaGiornata();
+        // l'import non tocca i conti: alimenta solo le presenze del QR
       })
       .catch(function (err) { avvisa('Import fallito: ' + err.message, true); });
   });
@@ -1475,106 +1584,320 @@
       .catch(function (err) { avvisa('Non eliminato: ' + err.message, true); });
   });
 
-  /* ---------------------------------------------------------- resoconti */
+  /* ---------------------------------------------------------- resoconti
+
+     Aziendali e privati nello stesso conto, perché con MML si chiude una
+     volta sola. Ogni voce porta il suo verso: positivo = MML deve a CCC.
+  --------------------------------------------------------------------- */
 
   var resoconto = null;
+
+  // i campi dei costi del mese e la chiave con cui vivono nelle impostazioni
+  var CAMPI_COSTI = {
+    rsVillage: 'alba_location_mese',
+    rsSponsorGiorno: 'alfredo_sponsor_giorno',
+    rsSponsorGiorni: 'mese_sponsor_giorni',
+    rsSuperbPerc: 'superb_percentuale',
+    rsGestione: 'alfredo_gestione_mese'
+  };
 
   el('meseResoconto').addEventListener('change', caricaResoconto);
   el('btnRicaricaResoconto').addEventListener('click', caricaResoconto);
 
   function caricaResoconto() {
-    var dati = { azione: 'resoconto', mese: el('meseResoconto').value };
-    var g = el('rsGiorniSponsor').value.trim();
-    if (g) dati.giorniSponsor = g;
-
-    chiama(dati)
+    chiama({ azione: 'resoconto', mese: el('meseResoconto').value })
       .then(function (r) { resoconto = r; disegnaResoconto(); })
       .catch(function (err) { avvisa('Non riesco a leggere il resoconto: ' + err.message, true); });
   }
 
+  function apriChiudi(idBottone, idElenco) {
+    el(idBottone).addEventListener('click', function () {
+      var elenco = el(idElenco);
+      var chiuso = elenco.classList.contains('nascosto');
+      elenco.classList.toggle('nascosto', !chiuso);
+      el(idBottone).setAttribute('aria-expanded', chiuso ? 'true' : 'false');
+      el(idBottone).textContent = chiuso ? 'Chiudi ▴' : 'Apri l’elenco ▾';
+      el(idBottone).classList.toggle('piena', chiuso);
+    });
+  }
+  apriChiudi('btnApriAz', 'rsElencoAz');
+  apriChiudi('btnApriPv', 'rsElencoPv');
+
   function disegnaResoconto() {
     var r = resoconto;
+
     el('rsCcc').textContent = euroTondo(r.totali.ccc);
     el('rsMml').textContent = euroTondo(r.totali.mml);
     el('rsVersoEt').textContent = r.totali.saldo >= 0 ? 'MML deve a CCC' : 'CCC deve a MML';
     el('rsSaldo').textContent = euroTondo(Math.abs(r.totali.saldo));
 
-    var corpo = el('rsCorpoAziendali');
-    corpo.innerHTML = '';
+    // --- aziendali
+    var a = r.aziendaliTotali;
+    el('rsAzSommario').textContent = a.conta
+      ? a.conta + (a.conta === 1 ? ' evento · ' : ' eventi · ') + euro(a.totale) + ' in tutto'
+      : 'Nessun evento';
+    el('rsAzCcc').textContent = euroTondo(a.spettaCCC);
+    el('rsAzMml').textContent = euroTondo(a.spettaMML);
+
+    var corpoAz = el('rsCorpoAz');
+    corpoAz.innerHTML = '';
     if (!r.aziendali.length) {
-      corpo.innerHTML = '<tr><td colspan="8" style="color:var(--tenue)">Nessun evento aziendale in questo mese.</td></tr>';
+      corpoAz.innerHTML = '<tr><td colspan="8" style="color:var(--tenue)">Nessun evento aziendale in questo mese.</td></tr>';
     }
     r.aziendali.forEach(function (e, i) {
-      var d = new Date(e.data + 'T12:00:00');
       var tr = document.createElement('tr');
       tr.innerHTML =
-        '<td>' + d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }) + '</td>' +
+        '<td>' + giornoBreve(e.data) + '</td>' +
         '<td>' + escapeHtml(e.azienda || '—') + '</td>' +
         '<td>' + e.persone + '</td>' +
         '<td>' + euroTondo(e.conto.totale) + '</td>' +
         '<td style="color:var(--salvia)">' + euroTondo(e.conto.spettaCCC) + '</td>' +
         '<td style="color:var(--salmone)">' + euroTondo(e.conto.spettaMML) + '</td>' +
-        '<td>' + (e.conto.saldo >= 0 ? 'MML → ' : 'CCC → ') + euroTondo(Math.abs(e.conto.saldo)) + '</td>' +
-        '<td><button type="button" class="azione" data-apri-rs="' + i + '" ' +
-          'style="min-height:34px; padding:0 12px">Apri</button></td>';
-      corpo.appendChild(tr);
+        '<td>' + verso(e.conto.saldo) + '</td>' +
+        '<td><button type="button" class="azione" data-rs-az="' + i + '" style="min-height:34px; padding:0 12px">Apri</button></td>';
+      corpoAz.appendChild(tr);
     });
-
-    Array.prototype.forEach.call(corpo.querySelectorAll('[data-apri-rs]'), function (b) {
+    Array.prototype.forEach.call(corpoAz.querySelectorAll('[data-rs-az]'), function (b) {
       b.addEventListener('click', function () {
-        var e = resoconto.aziendali[Number(b.getAttribute('data-apri-rs'))];
+        var e = resoconto.aziendali[Number(b.getAttribute('data-rs-az'))];
         el('meseAziendali').value = e.data.slice(0, 7);
         vaiA('aziendali');
         apriEventoAziendale(e);
       });
     });
 
-    var p = r.privati;
-    el('rsGiorniSponsor').value = el('rsGiorniSponsor').value || Math.round(p.sponsor / 20) || '';
-    el('rsPrivati').innerHTML =
-      voce('Utile delle giornate · ' + p.presenti + ' presenti', p.utileGiornate) +
-      voce('Sponsorizzata', -p.sponsor) +
-      voce('Gestione del format', -p.gestione) +
-      voce('Location', -p.location) +
-      '<div class="voce somma"><span>Da dividere</span><span>' + euro(p.utileNetto) + '</span></div>' +
-      voce('CCC', p.alVillage) +
-      voce('MML', p.adAlfredo);
+    // --- privati
+    var p = r.privatiTotali;
+    el('rsPvSommario').textContent = p.conta
+      ? p.conta + (p.conta === 1 ? ' giornata · ' : ' giornate · ') + p.ospiti +
+        ' ospiti · ' + euro(p.incasso) + ' incassati'
+      : 'Nessuna giornata';
+    el('rsPvCcc').textContent = euroTondo(p.spettaCCC);
+    el('rsPvMml').textContent = euroTondo(p.spettaMML);
 
-    el('rsTotali').innerHTML =
-      voce('Aziendali · CCC', r.aziendaliTotali.spettaCCC) +
-      voce('Privati · CCC', p.alVillage) +
-      '<div class="voce somma" style="font-size:18px; color:var(--salvia)"><span>Totale CCC</span><span>' +
-        euro(r.totali.ccc) + '</span></div>' +
-      '<div style="height:14px"></div>' +
-      voce('Aziendali · MML', r.aziendaliTotali.spettaMML) +
-      voce('Privati · MML', p.adAlfredo) +
-      '<div class="voce somma" style="font-size:18px; color:var(--salmone)"><span>Totale MML</span><span>' +
-        euro(r.totali.mml) + '</span></div>';
+    var corpoPv = el('rsCorpoPv');
+    corpoPv.innerHTML = '';
+    if (!r.privati.length) {
+      corpoPv.innerHTML = '<tr><td colspan="7" style="color:var(--tenue)">Nessuna giornata in questo mese.</td></tr>';
+    }
+    r.privati.forEach(function (e, i) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + giornoBreve(e.data) + '</td>' +
+        '<td>' + e.ospiti + '</td>' +
+        '<td>' + euroTondo(e.conto.incasso) + '</td>' +
+        '<td style="color:var(--salmone)">' + euroTondo(e.conto.costiMML) + '</td>' +
+        '<td style="color:var(--salvia)">' + euroTondo(e.conto.costiCCC) + '</td>' +
+        '<td>' + euroTondo(e.conto.utile) + '</td>' +
+        '<td><button type="button" class="azione" data-rs-pv="' + i + '" style="min-height:34px; padding:0 12px">Apri</button></td>';
+      corpoPv.appendChild(tr);
+    });
+    if (r.privati.length) {
+      var tot = document.createElement('tr');
+      tot.style.fontWeight = '700';
+      tot.innerHTML = '<td>Totale</td><td>' + p.ospiti + '</td><td>' + euroTondo(p.incasso) +
+        '</td><td>' + euroTondo(p.costiMML) + '</td><td>' + euroTondo(p.costiCCC) +
+        '</td><td>' + euroTondo(p.utile) + '</td><td></td>';
+      corpoPv.appendChild(tot);
+    }
+    Array.prototype.forEach.call(corpoPv.querySelectorAll('[data-rs-pv]'), function (b) {
+      b.addEventListener('click', function () {
+        var e = resoconto.privati[Number(b.getAttribute('data-rs-pv'))];
+        el('mesePrivati').value = e.data.slice(0, 7);
+        vaiA('privati');
+        apriPrivato(e);
+      });
+    });
+
+    // --- costi del mese
+    el('rsVillage').value = trovaCosto('Costi Village').importo;
+    el('rsSponsorGiorno').value = Number(impostazioni.alfredo_sponsor_giorno) || 0;
+    el('rsSponsorGiorni').value = r.costi.giorniSponsor;
+    el('rsSuperbPerc').value = r.costi.percSuperb;
+    el('rsGestione').value = trovaCosto('Gestione del format').importo;
+
+    ['Village', 'Sponsor', 'Superb', 'Gestione'].forEach(function (nome, i) {
+      var paga = r.costi.righe[i].paga;
+      var p2 = el('rsPaga' + nome);
+      p2.textContent = 'paga ' + paga;
+      p2.className = 'pastiglia ' + (paga === 'CCC' ? 'paga-ccc' : 'paga-mml');
+    });
+
+    ricalcolaCostiMese();
   }
+
+  function trovaCosto(etichetta) {
+    var t = resoconto.costi.righe.filter(function (x) { return x.etichetta === etichetta; })[0];
+    return t || { importo: 0, paga: 'CCC', credito: 0 };
+  }
+
+  function giornoBreve(data) {
+    var d = new Date(data + 'T12:00:00');
+    return d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  function verso(saldo) {
+    if (Math.round(saldo * 100) === 0) return '—';
+    return (saldo > 0 ? 'MML → ' : 'CCC → ') + euroTondo(Math.abs(saldo));
+  }
+
+  Object.keys(CAMPI_COSTI).forEach(function (id) {
+    el(id).addEventListener('input', ricalcolaCostiMese);
+  });
+
+  /** Ricalcola i costi del mese e il saldo finale, mentre scrivi. */
+  function ricalcolaCostiMese() {
+    if (!resoconto) return;
+    var r = resoconto;
+
+    var sponsor = numero('rsSponsorGiorno') * numero('rsSponsorGiorni');
+    var superb = r.privatiTotali.incasso * numero('rsSuperbPerc') / 100;
+
+    var righe = [
+      { etichetta: 'Costi Village', importo: numero('rsVillage'), paga: trovaCosto('Costi Village').paga },
+      { etichetta: 'Sponsorizzata', importo: sponsor, paga: trovaCosto('Sponsorizzata').paga },
+      { etichetta: 'Commissioni Superb', importo: superb, paga: trovaCosto('Commissioni Superb').paga },
+      { etichetta: 'Gestione del format', importo: numero('rsGestione'), paga: trovaCosto('Gestione del format').paga }
+    ].map(function (x) {
+      var meta = x.importo / 2;
+      var pagatoCCC = x.paga === 'CCC' ? x.importo : 0;
+      x.quota = meta;
+      x.credito = pagatoCCC - meta;
+      return x;
+    });
+
+    var totale = righe.reduce(function (s, x) { return s + x.importo; }, 0);
+    var saldoCosti = righe.reduce(function (s, x) { return s + x.credito; }, 0);
+
+    el('rsSponsorTot').textContent = euro(sponsor);
+    el('rsSuperbTot').textContent = euro(superb);
+    el('rsSuperbBase').textContent = 'sull’incasso dei privati, ' + euro(r.privatiTotali.incasso);
+    el('rsCostiTot').textContent = euro(totale);
+
+    var ccc = r.aziendaliTotali.spettaCCC + r.privatiTotali.spettaCCC - totale / 2;
+    var mml = r.aziendaliTotali.spettaMML + r.privatiTotali.spettaMML - totale / 2;
+    var saldo = r.aziendaliTotali.saldo + r.privatiTotali.saldo + saldoCosti;
+
+    el('rsCcc').textContent = euroTondo(ccc);
+    el('rsMml').textContent = euroTondo(mml);
+    el('rsVersoEt').textContent = saldo >= 0 ? 'MML deve a CCC' : 'CCC deve a MML';
+    el('rsSaldo').textContent = euroTondo(Math.abs(saldo));
+
+    el('rsPerche').innerHTML = percheMese(righe, saldo);
+    resoconto.costiVivi = { righe: righe, totale: totale, saldo: saldoCosti };
+  }
+
+  /** Una riga per blocco, col verso dei soldi e il motivo in chiaro. */
+  function percheMese(righeCosti, saldoFinale) {
+    var r = resoconto;
+    var html = '<div style="display:flex; flex-direction:column; gap:12px">';
+    var pezzi = [];
+
+    var blocco = function (titolo, spiega, credito) {
+      if (Math.round(credito * 100) === 0) return '';
+      var verde = credito > 0;
+      pezzi.push((verde ? '+ ' : '− ') + euro(Math.abs(credito)));
+      return '<div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; ' +
+        'justify-content:space-between; background:' +
+        (verde ? 'rgba(169,201,166,.14)' : 'rgba(242,167,159,.14)') +
+        '; border-radius:12px; padding:16px 18px">' +
+        '<span style="flex:1 1 360px; min-width:0; font-size:14px; line-height:1.5; color:#F0DAD5">' +
+        '<strong style="color:var(--panna)">' + titolo + '</strong><br>' + spiega + '</span>' +
+        '<span style="flex:0 0 auto; text-align:right">' +
+        '<span style="display:block; font-size:11px; letter-spacing:.08em; color:' +
+        (verde ? 'var(--salvia)' : 'var(--salmone)') + '">' +
+        (verde ? 'MML → CCC' : 'CCC → MML') + '</span>' +
+        '<strong style="font-family:Fraunces,serif; font-size:22px; color:' +
+        (verde ? 'var(--salvia)' : 'var(--salmone)') + '">' + euro(Math.abs(credito)) + '</strong>' +
+        '</span></div>';
+    };
+
+    html += blocco('Eventi aziendali',
+      'Li fattura MML, e la vostra parte ce l’ha lui.',
+      r.aziendaliTotali.saldo);
+
+    html += blocco('Eventi privati',
+      'Incassate voi, quindi gli dovete i suoi costi (' + euro(r.privatiTotali.costiMML) +
+      ') più metà utile (' + euro(r.privatiTotali.utile / 2) + ').',
+      r.privatiTotali.saldo);
+
+    var pagatiCCC = righeCosti.filter(function (x) { return x.paga === 'CCC'; });
+    var pagatiMML = righeCosti.filter(function (x) { return x.paga !== 'CCC'; });
+    var sommaCCC = pagatiCCC.reduce(function (s, x) { return s + x.importo; }, 0);
+    var sommaMML = pagatiMML.reduce(function (s, x) { return s + x.importo; }, 0);
+    var saldoCosti = righeCosti.reduce(function (s, x) { return s + x.credito; }, 0);
+
+    html += blocco('Costi del mese',
+      'Avete pagato voi ' + euro(sommaCCC) + ', lui ' + euro(sommaMML) + ': metà per uno.',
+      saldoCosti);
+
+    html += '</div>';
+
+    if (!pezzi.length) {
+      return '<p style="margin:0; font-size:15px; color:var(--tenue)">' +
+        'Niente da regolare in questo mese.</p>';
+    }
+
+    return html + '<div style="margin-top:20px; padding-top:20px; border-top:2px solid rgba(251,243,238,.3); ' +
+      'display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between">' +
+      '<span style="font-size:15px; line-height:1.5; color:#F0DAD5">' +
+      pezzi.join(' ').replace(/^\+ /, '') + ', quindi alla fine</span>' +
+      '<span style="text-align:right"><span style="display:block; font-size:13px; font-weight:600; color:var(--legno-chiaro)">' +
+      (saldoFinale >= 0 ? 'MML deve a CCC' : 'CCC deve a MML') + '</span>' +
+      '<strong style="font-family:Fraunces,serif; font-size:36px">' +
+      euro(Math.abs(saldoFinale)) + '</strong></span></div>';
+  }
+
+  el('btnSalvaCosti').addEventListener('click', function () {
+    var valori = {};
+    Object.keys(CAMPI_COSTI).forEach(function (id) {
+      valori[CAMPI_COSTI[id]] = numero(id);
+    });
+    var b = el('btnSalvaCosti');
+    b.disabled = true; b.textContent = 'Salvo…';
+    chiama({ azione: 'salvaImpostazioni', valori: valori })
+      .then(function (r) {
+        impostazioni = r.impostazioni;
+        avvisa('Costi del mese salvati.');
+        caricaResoconto();
+      })
+      .catch(function (err) { avvisa('Non salvati: ' + err.message, true); })
+      .finally(function () { b.disabled = false; b.textContent = 'Salva i costi'; });
+  });
 
   el('btnScaricaResoconto').addEventListener('click', function () {
     if (!resoconto) { avvisa('Carica prima un mese.', true); return; }
     var r = resoconto;
-    var righe = [['RESOCONTO', r.mese]];
-    righe.push([]);
+    var costi = r.costiVivi || r.costi;
+    var righe = [['RESOCONTO', r.mese], []];
+
     righe.push(['EVENTI AZIENDALI']);
     righe.push(['Data', 'Azienda', 'Persone', 'Totale', 'Spetta CCC', 'Spetta MML', 'Saldo']);
     r.aziendali.forEach(function (e) {
       righe.push([e.data, e.azienda, e.persone, e.conto.totale,
                   e.conto.spettaCCC, e.conto.spettaMML, e.conto.saldo]);
     });
+
     righe.push([]);
-    righe.push(['LABORATORI PRIVATI']);
-    righe.push(['Utile giornate', r.privati.utileGiornate]);
-    righe.push(['Sponsorizzata', -r.privati.sponsor]);
-    righe.push(['Gestione format', -r.privati.gestione]);
-    righe.push(['Location', -r.privati.location]);
-    righe.push(['CCC', r.privati.alVillage]);
-    righe.push(['MML', r.privati.adAlfredo]);
+    righe.push(['EVENTI PRIVATI']);
+    righe.push(['Data', 'Ospiti', 'Incasso', 'Costi MML', 'Costi CCC', 'Utile', 'Spetta CCC', 'Spetta MML']);
+    r.privati.forEach(function (e) {
+      righe.push([e.data, e.ospiti, e.conto.incasso, e.conto.costiMML, e.conto.costiCCC,
+                  e.conto.utile, e.conto.spettaCCC, e.conto.spettaMML]);
+    });
+
     righe.push([]);
-    righe.push(['TOTALE CCC', r.totali.ccc]);
-    righe.push(['TOTALE MML', r.totali.mml]);
-    righe.push([r.totali.saldo >= 0 ? 'MML deve a CCC' : 'CCC deve a MML', Math.abs(r.totali.saldo)]);
+    righe.push(['COSTI DEL MESE']);
+    righe.push(['Voce', 'Importo', 'Paga']);
+    costi.righe.forEach(function (x) { righe.push([x.etichetta, x.importo, x.paga]); });
+
+    righe.push([]);
+    var ccc = r.aziendaliTotali.spettaCCC + r.privatiTotali.spettaCCC - costi.totale / 2;
+    var mml = r.aziendaliTotali.spettaMML + r.privatiTotali.spettaMML - costi.totale / 2;
+    var saldo = r.aziendaliTotali.saldo + r.privatiTotali.saldo + costi.saldo;
+    righe.push(['TOTALE CCC', Math.round(ccc * 100) / 100]);
+    righe.push(['TOTALE MML', Math.round(mml * 100) / 100]);
+    righe.push([saldo >= 0 ? 'MML deve a CCC' : 'CCC deve a MML', Math.round(Math.abs(saldo) * 100) / 100]);
 
     var csv = righe.map(function (riga) {
       return riga.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
@@ -1582,38 +1905,41 @@
     scarica('resoconto-' + r.mese + '.csv', csv);
   });
 
+
   /* ----------------------------------------------------- impostazioni */
 
   var SCHEMA = [
-    { titolo: 'Biglietto', campi: [
-      ['prezzo_workshop', 'Prezzo workshop, a persona'],
-      ['superb_quota_iscritto', 'Superb, quota a iscritto'],
-      ['superb_percentuale', 'Superb, percentuale'],
-      ['durata_turno_ore', 'Durata del turno, in ore'],
-      ['posti_per_turno', 'Posti per turno']
-    ]},
-    { titolo: 'Alfredo', campi: [
-      ['alfredo_insegnante_ora', 'Insegnante, all’ora'],
-      ['alfredo_ceramica_persona', 'Ceramica, a persona'],
-      ['alfredo_gestione_mese', 'Gestione del format, al mese'],
-      ['alfredo_sponsor_giorno', 'Sponsorizzata, al giorno'],
-      ['ceramica_su', 'Ceramica calcolata su']
-    ]},
-    { titolo: 'Alba', campi: [
-      ['alba_dipendenti_ora', 'Dipendenti, all’ora'],
-      ['alba_ore_giornata', 'Ore dipendenti a giornata'],
-      ['alba_cibo_persona', 'Cibo e bevande, a persona'],
-      ['alba_location_mese', 'Location a forfait, al mese']
-    ]},
-    { titolo: 'Turni e divisione', campi: [
-      ['turni_sabato', 'Turni del sabato'],
-      ['turni_domenica', 'Turni della domenica'],
-      ['quota_alfredo', 'Quota di Alfredo, in percento'],
-      ['nome_evento', 'Nome dell’evento']
+    { titolo: 'Valori di partenza · privati', campi: [
+      ['prezzo_workshop', 'Prezzo a testa, IVA inclusa'],
+      ['alfredo_ceramica_persona', 'Materiale, a ospite'],
+      ['alfredo_insegnante_ora', 'Insegnante, all\u2019ora'],
+      ['durata_turno_ore', 'Ore di laboratorio'],
+      ['alba_cibo_persona', 'Food, a ospite'],
+      ['alba_dipendenti_ora', 'Personale, all\u2019ora'],
+      ['alba_ore_giornata', 'Ore di personale a giornata']
     ]},
     { titolo: 'Eventi aziendali', campi: [
       ['az_iva_mml', 'IVA su quello che fattura MML'],
       ['az_iva_ccc', 'IVA su quello che fattura CCC']
+    ]},
+    { titolo: 'Costi del mese', campi: [
+      ['alba_location_mese', 'Costi Village, a forfait'],
+      ['alfredo_sponsor_giorno', 'Sponsorizzata, al giorno'],
+      ['mese_sponsor_giorni', 'Giorni di sponsorizzata'],
+      ['superb_percentuale', 'Commissioni Superb, percentuale'],
+      ['alfredo_gestione_mese', 'Gestione del format, al mese']
+    ]},
+    { titolo: 'Chi paga i costi del mese', campi: [
+      ['mese_village_paga', 'Costi Village'],
+      ['mese_sponsor_paga', 'Sponsorizzata'],
+      ['mese_superb_paga', 'Commissioni Superb'],
+      ['mese_gestione_paga', 'Gestione del format']
+    ]},
+    { titolo: 'Pagina cliente e QR', campi: [
+      ['nome_evento', 'Nome dell\u2019evento'],
+      ['superb_quota_iscritto', 'Superb, quota a iscritto'],
+      ['turni_sabato', 'Turni del sabato'],
+      ['turni_domenica', 'Turni della domenica']
     ]}
   ];
 
@@ -1646,7 +1972,6 @@
       .then(function (r) {
         impostazioni = r.impostazioni;
         avvisa('Impostazioni salvate.');
-        caricaGiornata();
       })
       .catch(function (err) { avvisa('Non salvate: ' + err.message, true); });
   });
