@@ -792,8 +792,13 @@
       var v = dati[k];
       corpo.append(k, typeof v === 'object' ? JSON.stringify(v) : v);
     });
-    return fetch(API, { method: 'POST', body: corpo })
-      .then(function (r) { return r.json(); })
+    var ctrl = new AbortController();
+    var scaduto = setTimeout(function () { ctrl.abort(); }, 60000);
+    return fetch(API, { method: 'POST', body: corpo, signal: ctrl.signal })
+      .then(function (r) { clearTimeout(scaduto); return r.json(); }, function (e) {
+        clearTimeout(scaduto);
+        throw new Error(e && e.name === 'AbortError' ? 'Il server non risponde: riprova tra poco' : (e && e.message) || 'Connessione assente');
+      })
       .then(function (r) {
         if (!r.ok) throw new Error(r.errore || 'Errore');
         return r;
