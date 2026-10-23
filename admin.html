@@ -107,6 +107,25 @@
 
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   .scorri { overflow-x: auto; }
+  .dettaglio td { padding: 6px 14px 18px; border-top: 0; }
+  .dett { background: rgba(251,243,238,.06); border-radius: 14px; padding: 18px 20px; }
+  .dett h4 { margin: 0 0 8px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
+  .dett .blocchi { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+  .dett .blocco { flex: 1 1 230px; min-width: 0; border-radius: 12px; padding: 14px 16px; background: rgba(251,243,238,.06); }
+  .dett .blocco.ccc { border-left: 3px solid var(--salvia); }
+  .dett .blocco.ccc h4 { color: var(--salvia); }
+  .dett .blocco.mml { border-left: 3px solid var(--salmone); }
+  .dett .blocco.mml h4 { color: var(--salmone); }
+  .dett .blocco.neutro { border-left: 3px solid var(--legno-chiaro); }
+  .dett .blocco.neutro h4 { color: var(--legno-chiaro); }
+  .dett .riga-d { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; line-height: 1.5; padding: 3px 0; }
+  .dett .riga-d span:first-child { color: #F0DAD5; min-width: 0; }
+  .dett .riga-d small { display: block; color: var(--tenue); font-size: 12px; }
+  .dett .riga-d strong { white-space: nowrap; }
+  .dett .riga-d.tot { border-top: 1px solid rgba(251,243,238,.2); margin-top: 6px; padding-top: 8px; font-weight: 700; }
+  .dett .chiusa { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between;
+                  font-size: 14px; line-height: 1.5; border-top: 1px solid rgba(251,243,238,.2); padding-top: 14px; }
+  .dett .chiusa b { font-family: Fraunces, serif; font-size: 22px; }
   th { text-align: left; font-size: 11px; letter-spacing: .1em; color: var(--tenue); font-weight: 600; padding: 10px 14px; text-transform: uppercase; }
   td { padding: 10px 14px; border-top: 1px solid rgba(251,243,238,.1); }
   tfoot td { border-top: 2px solid rgba(251,243,238,.3); font-weight: 700; }
@@ -1860,9 +1879,15 @@
         '<td style="color:var(--salvia)">' + euroTondo(e.conto.spettaCCC) + '</td>' +
         '<td style="color:var(--salmone)">' + euroTondo(e.conto.spettaMML) + '</td>' +
         '<td>' + verso(e.conto.saldo) + '</td>' +
-        '<td><button type="button" class="azione" data-rs-az="' + i + '" style="min-height:34px; padding:0 12px">Apri</button></td>';
+        '<td style="white-space:nowrap"><button type="button" class="azione" data-det-az="' + i + '" aria-expanded="false" style="min-height:34px; padding:0 12px">Dettagli ▾</button> ' +
+        '<button type="button" class="azione" data-rs-az="' + i + '" style="min-height:34px; padding:0 12px">Apri</button></td>';
       corpoAz.appendChild(tr);
+      var dz = document.createElement('tr');
+      dz.className = 'dettaglio nascosto';
+      dz.innerHTML = '<td colspan="8">' + dettaglioAziendale(e) + '</td>';
+      corpoAz.appendChild(dz);
     });
+    agganciaDettagli(corpoAz);
     Array.prototype.forEach.call(corpoAz.querySelectorAll('[data-rs-az]'), function (b) {
       b.addEventListener('click', function () {
         var e = resoconto.aziendali[Number(b.getAttribute('data-rs-az'))];
@@ -1895,8 +1920,13 @@
         '<td style="color:var(--salmone)">' + euroTondo(e.conto.costiMML) + '</td>' +
         '<td style="color:var(--salvia)">' + euroTondo(e.conto.costiCCC) + '</td>' +
         '<td>' + euroTondo(e.conto.utile) + '</td>' +
-        '<td><button type="button" class="azione" data-rs-pv="' + i + '" style="min-height:34px; padding:0 12px">Apri</button></td>';
+        '<td style="white-space:nowrap"><button type="button" class="azione" data-det-pv="' + i + '" aria-expanded="false" style="min-height:34px; padding:0 12px">Dettagli ▾</button> ' +
+        '<button type="button" class="azione" data-rs-pv="' + i + '" style="min-height:34px; padding:0 12px">Apri</button></td>';
       corpoPv.appendChild(tr);
+      var dp = document.createElement('tr');
+      dp.className = 'dettaglio nascosto';
+      dp.innerHTML = '<td colspan="7">' + dettaglioPrivato(e) + '</td>';
+      corpoPv.appendChild(dp);
     });
     if (r.privati.length) {
       var tot = document.createElement('tr');
@@ -1906,6 +1936,7 @@
         '</td><td>' + euroTondo(p.utile) + '</td><td></td>';
       corpoPv.appendChild(tot);
     }
+    agganciaDettagli(corpoPv);
     Array.prototype.forEach.call(corpoPv.querySelectorAll('[data-rs-pv]'), function (b) {
       b.addEventListener('click', function () {
         var e = resoconto.privati[Number(b.getAttribute('data-rs-pv'))];
@@ -1925,6 +1956,136 @@
     Object.keys(CAMPI_PAGA).forEach(disegnaPastiglia);
 
     ricalcolaCostiMese();
+  }
+
+
+  /* ------------------------------------------------ dettaglio dei singoli eventi */
+
+  function agganciaDettagli(corpo) {
+    Array.prototype.forEach.call(corpo.querySelectorAll('[data-det-az],[data-det-pv]'), function (b) {
+      if (b.getAttribute('data-agganciato')) return;
+      b.setAttribute('data-agganciato', '1');
+      b.addEventListener('click', function () {
+        var tr = b.closest('tr').nextElementSibling;
+        var aperto = tr.classList.toggle('nascosto') === false;
+        b.setAttribute('aria-expanded', aperto ? 'true' : 'false');
+        b.textContent = aperto ? 'Dettagli ▴' : 'Dettagli ▾';
+        if (aperto) fissaLarghezzaDettagli();
+      });
+    });
+  }
+
+  /** Il pannello resta largo quanto lo schermo, anche se la tabella sotto scorre di lato. */
+  function fissaLarghezzaDettagli() {
+    Array.prototype.forEach.call(document.querySelectorAll('.dettaglio:not(.nascosto) .dett'), function (d) {
+      var sc = d.closest('.scorri');
+      if (!sc) return;
+      d.style.position = 'sticky';
+      d.style.left = '6px';
+      d.style.width = Math.max(240, sc.clientWidth - 40) + 'px';
+    });
+  }
+  window.addEventListener('resize', fissaLarghezzaDettagli);
+
+  function rigaD(etichetta, importo, spiega, tot) {
+    return '<div class="riga-d' + (tot ? ' tot' : '') + '"><span>' + etichetta +
+      (spiega ? '<small>' + spiega + '</small>' : '') + '</span><strong>' + euro(importo) + '</strong></div>';
+  }
+
+  function numIt(n) { return (Number(n) || 0).toLocaleString('it-IT', { maximumFractionDigits: 2 }); }
+
+  /** Una giornata privata: quanto entra, chi sostiene cosa, come si divide. */
+  function dettaglioPrivato(e) {
+    var c = e.conto;
+    var chiusa;
+    if (Math.round(c.saldo * 100) === 0) {
+      chiusa = 'Tra CCC e MML non c’è niente da regolare.';
+    } else {
+      chiusa = 'Incassa tutto CCC, quindi <strong>CCC deve a MML</strong> i suoi costi (' +
+        euro(c.costiMML) + ') più metà utile (' + euro(c.meta) + ').';
+    }
+    return '<div class="dett">' +
+      '<div class="blocchi">' +
+
+      '<div class="blocco neutro"><h4>Entra</h4>' +
+      rigaD('Biglietti', c.incasso, e.ospiti + ' ospiti × ' + euro(e.prezzoTesta) + ' (IVA inclusa)') +
+      '<div class="riga-d"><span style="color:var(--tenue)">Li incassa CCC</span><span></span></div></div>' +
+
+      '<div class="blocco mml"><h4>Costi sostenuti da MML</h4>' +
+      rigaD('Materiale', c.materiale, e.ospiti + ' ospiti × ' + euro(e.materialePersona)) +
+      rigaD('Insegnanti', c.docenza, numIt(e.insegnanti) + ' × ' + numIt(e.oreInsegnante) + ' h × ' + euro(e.costoInsegnanteOra) + ' all’ora') +
+      rigaD('Totale MML', c.costiMML, '', true) + '</div>' +
+
+      '<div class="blocco ccc"><h4>Costi sostenuti da CCC</h4>' +
+      rigaD('Food', c.food, e.ospiti + ' ospiti × ' + euro(e.foodPersona)) +
+      rigaD('Personale', c.personale, numIt(e.personale) + ' × ' + numIt(e.orePersonale) + ' h × ' + euro(e.costoPersonaleOra) + ' all’ora') +
+      rigaD('Totale CCC', c.costiCCC, '', true) + '</div>' +
+
+      '</div>' +
+      '<div class="blocchi">' +
+      '<div class="blocco neutro"><h4>Utile da dividere</h4>' +
+      rigaD('Incasso', c.incasso) +
+      rigaD('meno costi MML', c.costiMML) +
+      rigaD('meno costi CCC', c.costiCCC) +
+      rigaD('Utile', c.utile, 'metà a testa: ' + euro(c.meta), true) + '</div>' +
+
+      '<div class="blocco ccc"><h4>Spetta a CCC</h4>' +
+      rigaD('I suoi costi, indietro', c.costiCCC) +
+      rigaD('Metà utile', c.meta) +
+      rigaD('Totale', c.spettaCCC, '', true) + '</div>' +
+
+      '<div class="blocco mml"><h4>Spetta a MML</h4>' +
+      rigaD('I suoi costi, indietro', c.costiMML) +
+      rigaD('Metà utile', c.meta) +
+      rigaD('Totale', c.spettaMML, '', true) + '</div>' +
+      '</div>' +
+      (e.note ? '<div style="font-size:13px; color:var(--tenue); margin-bottom:12px">Note: ' + escapeHtml(e.note) + '</div>' : '') +
+      '<div class="chiusa"><span>' + chiusa + '</span><span>' +
+      (Math.round(c.saldo * 100) === 0 ? '' : '<b>' + euro(Math.abs(c.saldo)) + '</b>') + '</span></div>' +
+      '</div>';
+  }
+
+  function chiDi(d) { return d === 'CCC' ? 'Solo CCC' : (d === 'MML' ? 'Solo MML' : 'Diviso a metà'); }
+
+  /** Un evento aziendale: ogni voce, chi incassa, di chi è, e cosa ne viene. */
+  function dettaglioAziendale(e) {
+    var c = e.conto;
+    var aliquota = c.workshopNetto ? Math.round(c.workshopIva / c.workshopNetto * 100) : 0;
+    var righe = c.righe.map(function (x, i) {
+      var spiega = '';
+      if (i === 0) spiega = e.persone + ' persone × ' + euro(e.prezzoTesta) + ' = ' + euro(c.workshopNetto) +
+        ' + IVA ' + aliquota + '% (' + euro(c.workshopIva) + ')';
+      return '<tr>' +
+        '<td>' + escapeHtml(x.etichetta) + (spiega ? '<div style="font-size:12px; color:var(--tenue)">' + spiega + '</div>' : '') + '</td>' +
+        '<td style="text-align:right; white-space:nowrap">' + euro(x.lordo) + '</td>' +
+        '<td>' + chiDi(x.diChi) + '</td>' +
+        '<td>' + x.incassa + '</td>' +
+        '<td style="text-align:right; color:var(--salvia); white-space:nowrap">' + euro(x.quotaCCC) + '</td>' +
+        '<td style="text-align:right; color:var(--salmone); white-space:nowrap">' + euro(x.quotaMML) + '</td>' +
+        '</tr>';
+    }).join('');
+
+    var chiusa;
+    if (Math.round(c.saldo * 100) === 0) {
+      chiusa = 'Tra CCC e MML non c’è niente da regolare.';
+    } else {
+      chiusa = 'CCC ha incassato ' + euro(c.inManoCCC) + ', MML ' + euro(c.inManoMML) + '. A CCC ne spettano ' +
+        euro(c.spettaCCC) + ', a MML ' + euro(c.spettaMML) + ', quindi <strong>' +
+        (c.saldo > 0 ? 'MML deve a CCC' : 'CCC deve a MML') + '</strong>.';
+    }
+    return '<div class="dett">' +
+      '<div class="scorri"><table style="font-size:13px">' +
+      '<thead><tr><th style="padding:6px 10px">Voce</th><th style="padding:6px 10px; text-align:right">Importo</th><th style="padding:6px 10px">Di chi è</th>' +
+      '<th style="padding:6px 10px">Incassa</th><th style="padding:6px 10px; text-align:right">Quota CCC</th><th style="padding:6px 10px; text-align:right">Quota MML</th></tr></thead>' +
+      '<tbody>' + righe + '</tbody>' +
+      '<tfoot><tr style="font-weight:700; white-space:nowrap"><td>Totale</td><td style="text-align:right">' + euro(c.totale) + '</td><td></td><td></td>' +
+      '<td style="text-align:right; color:var(--salvia)">' + euro(c.spettaCCC) + '</td>' +
+      '<td style="text-align:right; color:var(--salmone)">' + euro(c.spettaMML) + '</td></tr></tfoot>' +
+      '</table></div>' +
+      (e.note ? '<div style="font-size:13px; color:var(--tenue); margin:12px 0 0">Note: ' + escapeHtml(e.note) + '</div>' : '') +
+      '<div class="chiusa" style="margin-top:14px"><span>' + chiusa + '</span><span>' +
+      (Math.round(c.saldo * 100) === 0 ? '' : '<b>' + euro(Math.abs(c.saldo)) + '</b>') + '</span></div>' +
+      '</div>';
   }
 
   function trovaCosto(etichetta) {
