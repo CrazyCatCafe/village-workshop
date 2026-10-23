@@ -1,0 +1,16 @@
+{
+  "id": "/admin.html",
+  "name": "A-mici & Clay",
+  "short_name": "A-mici & Clay",
+  "description": "Gestione dei laboratori di ceramica — Mani Milano Lab e Crazy Cat Café",
+  "lang": "it",
+  "start_url": "./admin.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#4A1129",
+  "theme_color": "#4A1129",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
