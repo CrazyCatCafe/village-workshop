@@ -106,6 +106,8 @@
   tfoot td { border-top: 2px solid rgba(251,243,238,.3); font-weight: 700; }
   td input { width: 72px; text-align: center; padding: 8px 10px; font-size: 14px; }
 
+  body.sola-lettura [data-rs-az], body.sola-lettura [data-rs-pv], body.sola-lettura #btnSalvaCosti { display: none; }
+  body.sola-lettura #rsPagaVillage, body.sola-lettura #rsPagaSponsor, body.sola-lettura #rsPagaSuperb, body.sola-lettura #rsPagaGestione { pointer-events: none; }
   .pastiglia { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
   .pastiglia.presente { background: var(--salvia); color: #203A1F; }
   .pastiglia.assente { background: transparent; box-shadow: inset 0 0 0 1px var(--salmone); color: var(--salmone); }
@@ -656,6 +658,21 @@
     </div>
 
 
+    <!-- SALA: solo i partecipanti -------------------------------------- -->
+    <div data-pagina="sala" class="nascosto">
+      <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
+        <h1>Partecipanti</h1>
+        <div style="display:flex; gap:10px; align-items:center">
+          <label for="meseSala" style="font-size:13px">Mese</label>
+          <input type="month" id="meseSala" style="width:auto">
+        </div>
+      </div>
+      <p style="color:var(--tenue); font-size:15px; margin:0 0 18px; max-width:60ch">
+        Scrivi quante persone ci sono state a ogni giornata e premi Salva.
+      </p>
+      <div id="elencoSala"></div>
+    </div>
+
     <!-- IMPOSTAZIONI -------------------------------------------------- -->
     <div data-pagina="impostazioni" class="nascosto">
       <h1 style="margin-bottom:6px">Impostazioni</h1>
@@ -684,6 +701,7 @@
   var CHIAVE_ORA = 'village_token_ora';
   var DURATA = 12 * 60 * 60 * 1000; // dopo dodici ore il codice si richiede
   var token = '';
+  var ruolo = '';
 
   /** Il codice ricordato vale solo finché non scade. */
   function tokenSalvato() {
@@ -767,13 +785,10 @@
     chiama({ azione: 'accedi', utente: el('utente').value.trim(), password: pw })
       .then(function (r) {
         token = r.sessione;
-        return chiama({ azione: 'impostazioni' });
-      })
-      .then(function (r) {
+        ruolo = r.ruolo;
         ricordaToken(token);
-        impostazioni = r.impostazioni;
         el('token').value = '';
-        entra();
+        return avviaPerRuolo();
       })
       .catch(function (err) {
         token = '';
@@ -783,7 +798,6 @@
   });
 
   el('btnEsci').addEventListener('click', function () {
-    var t = token;
     dimenticaToken();
     // chiudo la sessione anche sul server, poi ricarico (senza aspettare troppo)
     var chiusa = false;
@@ -792,17 +806,95 @@
     setTimeout(via, 2500);
   });
 
+  /** Dopo l'accesso: ognuno vede solo quello che il suo livello permette. */
+  function avviaPerRuolo() {
+    if (ruolo === 'admin') {
+      return chiama({ azione: 'impostazioni' }).then(function (r) {
+        impostazioni = r.impostazioni;
+        entra();
+      });
+    }
+    impostazioni = {};
+    preparaDate();
+    el('ingresso').classList.add('nascosto');
+    el('scelta').classList.add('nascosto');
+    el('app').classList.remove('nascosto');
+    el('btnCambiaModo').classList.add('nascosto');
+    Array.prototype.forEach.call(document.querySelectorAll('nav button[data-vista]'), function (b) {
+      b.classList.add('nascosto');
+    });
+    if (ruolo === 'sala') {
+      vaiA('sala');
+      caricaSala();
+    } else {
+      document.body.classList.add('sola-lettura');
+      ['rsVillage', 'rsSponsorGiorno', 'rsSponsorGiorni', 'rsSuperbPerc', 'rsGestione'].forEach(function (id) {
+        el(id).disabled = true;
+      });
+      var voceResoconti = document.querySelector('nav button[data-vista="resoconti"]');
+      voceResoconti.classList.remove('nascosto');
+      vaiA('resoconti');
+      caricaResoconto();
+    }
+    return Promise.resolve();
+  }
+
+  /* ---------------------------------------------------- livello sala */
+
+  function caricaSala() {
+    var box = el('elencoSala');
+    box.innerHTML = '<p style="color:var(--tenue)">Un attimo…</p>';
+    chiama({ azione: 'privati', mese: el('meseSala').value })
+      .then(function (r) {
+        if (!r.eventi.length) {
+          box.innerHTML = '<p style="color:var(--tenue); font-size:15px">Nessuna giornata in questo mese.</p>';
+          return;
+        }
+        box.innerHTML = '';
+        r.eventi.slice().sort(function (a, b) { return a.data < b.data ? -1 : 1; }).forEach(function (e) {
+          var riga = document.createElement('div');
+          riga.className = 'carta';
+          riga.style.cssText = 'display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between; margin-bottom:12px';
+          var d = new Date(e.data + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+          riga.innerHTML = '<strong style="font-family:Fraunces,serif; font-size:20px; text-transform:capitalize">' + escapeHtml(d) + '</strong>' +
+            '<span style="display:flex; gap:10px; align-items:center">' +
+            '<input type="text" inputmode="numeric" aria-label="Partecipanti" style="width:90px" value="' + Number(e.ospiti) + '">' +
+            '<button type="button" class="azione piena">Salva</button></span>';
+          var campo = riga.querySelector('input');
+          var bt = riga.querySelector('button');
+          bt.addEventListener('click', function () {
+            bt.disabled = true; bt.textContent = 'Salvo…';
+            chiama({ azione: 'salvaOspiti', id: e.id, ospiti: Number(String(campo.value).replace(',', '.')) })
+              .then(function (x) {
+                campo.value = x.evento.ospiti;
+                avvisa('Salvato: ' + x.evento.ospiti + ' partecipanti.');
+              })
+              .catch(function (err) { avvisa('Non salvato: ' + err.message, true); })
+              .finally(function () { bt.disabled = false; bt.textContent = 'Salva'; });
+          });
+          box.appendChild(riga);
+        });
+      })
+      .catch(function (err) { box.innerHTML = ''; avvisa(err.message, true); });
+  }
+  el('meseSala').addEventListener('change', caricaSala);
+
   function entra() {
     el('ingresso').classList.add('nascosto');
     el('app').classList.add('nascosto');
     el('scelta').classList.remove('nascosto');
+    preparaDate();
+    disegnaImpostazioni();
+  }
+
+  function preparaDate() {
     el('dataImport').value = oggiISO();
     el('mesePrivati').value = oggiISO().slice(0, 7);
     el('meseAziendali').value = oggiISO().slice(0, 7);
     el('meseResoconto').value = oggiISO().slice(0, 7);
+    el('meseSala').value = oggiISO().slice(0, 7);
     el('consensiDa').value = oggiISO().slice(0, 8) + '01';
     el('consensiA').value = oggiISO();
-    disegnaImpostazioni();
   }
 
   /* ------------------------------------------------- scelta del tipo */
@@ -1730,7 +1822,7 @@
 
     // --- costi del mese
     el('rsVillage').value = trovaCosto('Costi Village').importo;
-    el('rsSponsorGiorno').value = Number(impostazioni.alfredo_sponsor_giorno) || 0;
+    el('rsSponsorGiorno').value = r.costi.sponsorGiorno !== undefined ? r.costi.sponsorGiorno : (Number(impostazioni.alfredo_sponsor_giorno) || 0);
     el('rsSponsorGiorni').value = r.costi.giorniSponsor;
     el('rsSuperbPerc').value = r.costi.percSuperb;
     el('rsGestione').value = trovaCosto('Gestione del format').importo;
@@ -1776,7 +1868,7 @@
 
   Object.keys(CAMPI_PAGA).forEach(function (id) {
     el(id).addEventListener('click', function () {
-      if (!resoconto) return;
+      if (!resoconto || ruolo !== 'admin') return;
       var riga = resoconto.costi.righe.filter(function (x) { return x.etichetta === CAMPI_PAGA[id][0]; })[0];
       if (!riga) return;
       riga.paga = riga.paga === 'CCC' ? 'MML' : 'CCC';
@@ -2014,8 +2106,8 @@
   if (!token) {
     chiediCodice('');
   } else {
-    chiama({ azione: 'impostazioni' })
-      .then(function (r) { impostazioni = r.impostazioni; entra(); })
+    chiama({ azione: 'io' })
+      .then(function (r) { ruolo = r.ruolo; return avviaPerRuolo(); })
       .catch(function () { dimenticaToken(); chiediCodice(''); });
   }
 })();
