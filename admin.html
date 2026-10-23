@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#4A1129">
-<title>Lab. Ceramica · Gestione laboratori</title>
+<title>A-mici &amp; Clay · Gestione laboratori</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#4A1129">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Lab. Ceramica">
+<meta name="apple-mobile-web-app-title" content="A-mici &amp; Clay">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
@@ -223,7 +223,8 @@
 <!-- ingresso ---------------------------------------------------------- -->
 <div class="ingresso" id="ingresso">
   <div class="loghi" role="img" aria-label="Mani Milano Lab e Crazy Cat Café"></div>
-  <h1 style="text-align:center">Gestione laboratori</h1>
+  <h1 style="text-align:center; margin-bottom:4px">A-mici &amp; Clay</h1>
+  <p style="text-align:center; margin:0; color:var(--tenue); font-size:15px">Gestione laboratori</p>
   <form id="formIngresso" class="nascosto" style="margin-top:20px">
     <label for="utente">Nome utente</label>
     <input type="text" id="utente" autocomplete="username" autocapitalize="none" spellcheck="false" required>
@@ -239,7 +240,7 @@
 <div class="scelta nascosto" id="scelta">
   <div class="loghi" role="img" aria-label="Mani Milano Lab e Crazy Cat Café"></div>
   <div class="testata">
-    <h1 id="saluto">Ciao!</h1>
+    <div><div style="font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--legno-chiaro); margin-bottom:4px">A-mici &amp; Clay</div><h1 id="saluto">Ciao!</h1></div>
     <button type="button" class="azione" id="btnEsciHome">Esci</button>
   </div>
   <p class="sotto">Su cosa lavori?</p>
@@ -263,7 +264,7 @@
 <div class="telaio nascosto" id="app">
   <nav>
     <div class="marchio">
-      <span>Lab. Ceramica</span>
+      <span>A-mici &amp; Clay</span>
     </div>
     <button type="button" data-vista="privati" data-modo="privati" aria-current="page">Eventi privati</button>
     <button type="button" data-vista="iscritti" data-modo="privati">Iscritti</button>
@@ -2328,6 +2329,9 @@
       doc.addImage(logo.url, 'PNG', M, y, lw, lh);
       y += lh + 8;
     }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor.apply(doc, [163, 117, 74]);
+    doc.text('A-MICI & CLAY', M, y);
+    y += 7;
     doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor.apply(doc, VINO);
     doc.text('Resoconto di ' + nomeMese, M, y);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, GRIGIO);
@@ -2454,7 +2458,7 @@
     for (var i = 1; i <= n; i++) {
       doc.setPage(i);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, GRIGIO);
-      doc.text('Mani Milano Lab × Crazy Cat Café · ' + nomeMese, M, 289);
+      doc.text('A-mici & Clay · Mani Milano Lab × Crazy Cat Café · ' + nomeMese, M, 289);
       doc.text('Pagina ' + i + ' di ' + n, 210 - M, 289, { align: 'right' });
     }
 
