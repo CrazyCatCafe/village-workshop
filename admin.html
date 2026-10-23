@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#4A1129">
-<title>Village · Gestione laboratori</title>
+<title>Lab. Ceramica · Gestione laboratori</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
@@ -242,7 +242,7 @@
         <path fill="#A3754A" d="M44 30 L36 6 L58 22 C62 21 66 21 70 22 L92 6 L84 30 C94 40 98 54 98 66 C98 80 92 92 92 104 C92 120 100 126 104 132 L28 132 C20 132 16 126 16 118 C16 100 30 92 30 76 C30 60 34 42 44 30 Z"/>
         <path d="M104 132 C120 127 124 110 113 102" fill="none" stroke="#A3754A" stroke-width="9" stroke-linecap="round"/>
       </svg>
-      <span>Village</span>
+      <span>Lab. Ceramica</span>
     </div>
     <button type="button" data-vista="privati" data-modo="privati" aria-current="page">Eventi privati</button>
     <button type="button" data-vista="iscritti" data-modo="privati">Iscritti</button>
@@ -532,12 +532,14 @@
     <!-- RESOCONTI ----------------------------------------------------- -->
     <div data-pagina="resoconti" class="nascosto">
       <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
-        <h1>Resoconti</h1>
+        <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; min-width:0">
+          <h1 id="titoloResoconto" style="margin:0">Resoconto</h1>
+          <button type="button" class="azione piena" id="btnScaricaResoconto">Scarica il PDF</button>
+        </div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
           <label for="meseResoconto" style="font-size:13px">Mese</label>
           <input type="month" id="meseResoconto" style="width:auto">
           <button type="button" class="azione" id="btnRicaricaResoconto">Ricalcola</button>
-          <button type="button" class="azione piena" id="btnScaricaResoconto">Scarica il PDF</button>
         </div>
       </div>
 
@@ -886,6 +888,7 @@
   el('meseSala').addEventListener('change', caricaSala);
 
   function entra() {
+    try { history.replaceState({ s: 'scelta' }, ''); } catch (e) { /* niente */ }
     var n = String(nomeUtente || '');
     el('saluto').textContent = 'Ciao' + (n ? ' ' + n.charAt(0).toUpperCase() + n.slice(1) : '') + '!';
     el('ingresso').classList.add('nascosto');
@@ -914,20 +917,54 @@
   el('vaiResoconti').addEventListener('click', function () { apriModo('resoconti'); });
   el('btnCambiaModo').addEventListener('click', tornaAllaPrincipale);
 
+  /* ----------------------------------------------- tasto "indietro" del telefono e del browser
+
+     L'app e una sola pagina: senza far niente, "indietro" esce dal sito.
+     Ogni schermata che apri aggiunge un passo alla cronologia, e "indietro"
+     torna al passo prima. Vale per l'amministratore, che e l'unico a navigare.
+  --------------------------------------------------------------------- */
+
+  var ripristinando = false;
+  var vistaCorrente = '';
+
+  function passo(stato) {
+    if (ripristinando || ruolo !== 'admin') return;
+    var s = history.state;
+    if (s && s.s === stato.s && s.modo === stato.modo && s.vista === stato.vista &&
+        !!s.scheda === !!stato.scheda) return;
+    try { history.pushState(stato, ''); } catch (e) { /* senza cronologia si naviga lo stesso */ }
+  }
+
+  /** Quando chiudi una scheda coi bottoni dell'app, anche la cronologia fa un passo indietro. */
+  function chiudiPassoScheda() {
+    if (ripristinando || ruolo !== 'admin') return;
+    if (history.state && history.state.scheda) {
+      try { history.back(); } catch (e) { /* niente */ }
+    }
+  }
+
   function tornaAllaPrincipale() {
+    passo({ s: 'scelta' });
+    mostraScelta();
+  }
+
+  function mostraScelta() {
     el('app').classList.add('nascosto');
     el('scelta').classList.remove('nascosto');
+  }
+
+  function mostraVociMenu() {
+    Array.prototype.forEach.call(document.querySelectorAll('nav button[data-vista]'), function (b) {
+      var suo = b.getAttribute('data-modo');
+      b.classList.toggle('nascosto', suo !== 'tutti' && suo !== modo);
+    });
   }
 
   function apriModo(quale) {
     modo = quale;
     el('scelta').classList.add('nascosto');
     el('app').classList.remove('nascosto');
-
-    Array.prototype.forEach.call(document.querySelectorAll('nav button[data-vista]'), function (b) {
-      var suo = b.getAttribute('data-modo');
-      b.classList.toggle('nascosto', suo !== 'tutti' && suo !== modo);
-    });
+    mostraVociMenu();
 
     if (modo === 'privati') { vaiA('privati'); caricaPrivati(); }
     else if (modo === 'aziendali') { vaiA('aziendali'); caricaAziendali(); }
@@ -935,6 +972,8 @@
   }
 
   function vaiA(vista) {
+    vistaCorrente = vista;
+    passo({ s: 'app', modo: modo, vista: vista });
     Array.prototype.forEach.call(document.querySelectorAll('nav button[data-vista]'), function (x) {
       if (x.getAttribute('data-vista') === vista) x.setAttribute('aria-current', 'page');
       else x.removeAttribute('aria-current');
@@ -943,6 +982,38 @@
       p.classList.toggle('nascosto', p.getAttribute('data-pagina') !== vista);
     });
   }
+
+  window.addEventListener('popstate', function (ev) {
+    if (!token || ruolo !== 'admin') return;
+    var s = ev.state;
+    if (!s || !s.s || s.s === 'login') s = { s: 'scelta' };
+    ripristinando = true;
+    try {
+      if (s.s === 'scelta') {
+        mostraScelta();
+      } else {
+        var cambiaVista = s.vista !== vistaCorrente;
+        modo = s.modo;
+        el('scelta').classList.add('nascosto');
+        el('app').classList.remove('nascosto');
+        mostraVociMenu();
+        vaiA(s.vista);
+        if (s.scheda) {
+          // avanti verso una scheda chiusa: non la ricostruisco, mostro l'elenco
+          try { history.replaceState({ s: 'app', modo: s.modo, vista: s.vista }, ''); } catch (e) { /* niente */ }
+        }
+        if (s.vista === 'privati') {
+          if (cambiaVista) caricaPrivati();
+          else { el('schedaPrivato').classList.add('nascosto'); el('elencoPrivati').classList.remove('nascosto'); el('titoloPrivati').textContent = 'Eventi privati'; }
+        } else if (s.vista === 'aziendali') {
+          if (cambiaVista) caricaAziendali();
+          else { el('schedaAziendale').classList.add('nascosto'); el('elencoAziendali').classList.remove('nascosto'); el('titoloAziendali').textContent = 'Eventi aziendali'; }
+        } else if (s.vista === 'resoconti') {
+          caricaResoconto();
+        }
+      }
+    } finally { ripristinando = false; }
+  });
 
   /* ------------------------------------------------------------ viste */
 
@@ -1001,6 +1072,7 @@
   }
 
   function disegnaElencoPrivati() {
+    chiudiPassoScheda();
     el('schedaPrivato').classList.add('nascosto');
     el('elencoPrivati').classList.remove('nascosto');
     el('titoloPrivati').textContent = 'Eventi privati';
@@ -1068,6 +1140,7 @@
     el('titoloPrivati').textContent = e.id ? 'Giornata' : 'Nuova giornata';
     el('elencoPrivati').classList.add('nascosto');
     el('schedaPrivato').classList.remove('nascosto');
+    passo({ s: 'app', modo: modo, vista: 'privati', scheda: true });
     ricalcolaPrivato();
   }
 
@@ -1397,6 +1470,7 @@
   }
 
   function disegnaElencoAziendali() {
+    chiudiPassoScheda();
     el('schedaAziendale').classList.add('nascosto');
     el('elencoAziendali').classList.remove('nascosto');
     el('titoloAziendali').textContent = 'Eventi aziendali';
@@ -1466,6 +1540,7 @@
     el('btnEliminaAziendale').classList.toggle('nascosto', !e.id);
     el('elencoAziendali').classList.add('nascosto');
     el('schedaAziendale').classList.remove('nascosto');
+    passo({ s: 'app', modo: modo, vista: 'aziendali', scheda: true });
 
     disegnaExtra();
     ricalcolaAziendale();
@@ -1711,6 +1786,15 @@
 
   var resoconto = null;
 
+  /** "Ciao Luigi, ecco il resoconto di ottobre 2026" segue il mese scelto. */
+  function aggiornaTitoloResoconto() {
+    var n = String(nomeUtente || '');
+    var nome = n ? n.charAt(0).toUpperCase() + n.slice(1) : '';
+    var m = el('meseResoconto').value || oggiISO().slice(0, 7);
+    var mese = new Date(m + '-01T12:00:00').toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+    el('titoloResoconto').textContent = 'Ciao' + (nome ? ' ' + nome : '') + ', ecco il resoconto di ' + mese;
+  }
+
   // i campi dei costi del mese e la chiave con cui vivono nelle impostazioni
   var CAMPI_COSTI = {
     rsVillage: 'alba_location_mese',
@@ -1720,10 +1804,11 @@
     rsGestione: 'alfredo_gestione_mese'
   };
 
-  el('meseResoconto').addEventListener('change', caricaResoconto);
+  el('meseResoconto').addEventListener('change', function () { aggiornaTitoloResoconto(); caricaResoconto(); });
   el('btnRicaricaResoconto').addEventListener('click', caricaResoconto);
 
   function caricaResoconto() {
+    aggiornaTitoloResoconto();
     chiama({ azione: 'resoconto', mese: el('meseResoconto').value })
       .then(function (r) { resoconto = r; disegnaResoconto(); })
       .catch(function (err) { avvisa('Non riesco a leggere il resoconto: ' + err.message, true); });
