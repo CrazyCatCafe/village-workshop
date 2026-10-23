@@ -537,6 +537,7 @@
           <label for="meseResoconto" style="font-size:13px">Mese</label>
           <input type="month" id="meseResoconto" style="width:auto">
           <button type="button" class="azione" id="btnRicaricaResoconto">Ricalcola</button>
+          <button type="button" class="azione piena" id="btnScaricaResoconto">Scarica il PDF</button>
         </div>
       </div>
 
@@ -653,7 +654,6 @@
       <div class="carta">
         <h2 style="margin-bottom:20px">Chi deve a chi, e perché</h2>
         <div id="rsPerche"></div>
-        <button type="button" class="azione" id="btnScaricaResoconto" style="width:100%; margin-top:20px">Scarica il resoconto</button>
       </div>
     </div>
 
@@ -688,6 +688,8 @@
   </main>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
 (function () {
   'use strict';
@@ -2006,45 +2008,205 @@
       .finally(function () { b.disabled = false; b.textContent = 'Salva i costi'; });
   });
 
+  /* ----------------------------------------------------------- PDF del resoconto */
+
+  /** I loghi sono panna per lo sfondo scuro: per la carta li ricolora in vinaccia. */
+  function logoPerCarta() {
+    return new Promise(function (ok) {
+      try {
+        var css = getComputedStyle(document.querySelector('.loghi')).backgroundImage;
+        var m = /url\(["']?(.*?)["']?\)$/.exec(css);
+        if (!m) { ok(null); return; }
+        var img = new Image();
+        img.onload = function () {
+          var c = document.createElement('canvas');
+          c.width = img.width; c.height = img.height;
+          var x = c.getContext('2d');
+          x.drawImage(img, 0, 0);
+          var d = x.getImageData(0, 0, c.width, c.height);
+          for (var i = 0; i < d.data.length; i += 4) { d.data[i] = 74; d.data[i + 1] = 17; d.data[i + 2] = 41; }
+          x.putImageData(d, 0, 0);
+          ok({ url: c.toDataURL('image/png'), w: c.width, h: c.height });
+        };
+        img.onerror = function () { ok(null); };
+        img.src = m[1];
+      } catch (e) { ok(null); }
+    });
+  }
+
+  function eur2(n) {
+    var v = Math.round((Number(n) || 0) * 100) / 100;
+    return (v < 0 ? '- ' : '') + Math.abs(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  }
+  function dataIt(d) { return d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4); }
+  function versoTesto(saldo) {
+    if (Math.round(saldo * 100) === 0) return 'pari';
+    return (saldo > 0 ? 'MML deve a CCC ' : 'CCC deve a MML ') + eur2(Math.abs(saldo));
+  }
+
   el('btnScaricaResoconto').addEventListener('click', function () {
     if (!resoconto) { avvisa('Carica prima un mese.', true); return; }
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      avvisa('Non riesco a caricare il generatore di PDF. Controlla la connessione e ricarica la pagina.', true);
+      return;
+    }
+    var bt = el('btnScaricaResoconto');
+    bt.disabled = true; bt.textContent = 'Preparo il PDF…';
+    logoPerCarta().then(function (logo) {
+      creaPdf(logo);
+    }).catch(function (err) {
+      avvisa('PDF non riuscito: ' + err.message, true);
+    }).finally(function () { bt.disabled = false; bt.textContent = 'Scarica il PDF'; });
+  });
+
+  function creaPdf(logo) {
     var r = resoconto;
     var costi = r.costiVivi || r.costi;
-    var righe = [['RESOCONTO', r.mese], []];
+    var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+    var VINO = [74, 17, 41], SALMONE = [242, 167, 159], CHIARO = [250, 240, 236], GRIGIO = [110, 90, 98];
+    var M = 14, W = 210 - M * 2;
+    var y = 14;
 
-    righe.push(['EVENTI AZIENDALI']);
-    righe.push(['Data', 'Azienda', 'Persone', 'Totale', 'Spetta CCC', 'Spetta MML', 'Saldo']);
-    r.aziendali.forEach(function (e) {
-      righe.push([e.data, e.azienda, e.persone, e.conto.totale,
-                  e.conto.spettaCCC, e.conto.spettaMML, e.conto.saldo]);
-    });
+    var nomeMese = new Date(r.mese + '-01T12:00:00').toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+    nomeMese = nomeMese.charAt(0).toUpperCase() + nomeMese.slice(1);
 
-    righe.push([]);
-    righe.push(['EVENTI PRIVATI']);
-    righe.push(['Data', 'Ospiti', 'Incasso', 'Costi MML', 'Costi CCC', 'Utile', 'Spetta CCC', 'Spetta MML']);
-    r.privati.forEach(function (e) {
-      righe.push([e.data, e.ospiti, e.conto.incasso, e.conto.costiMML, e.conto.costiCCC,
-                  e.conto.utile, e.conto.spettaCCC, e.conto.spettaMML]);
-    });
+    if (logo) {
+      var lw = 78, lh = lw * logo.h / logo.w;
+      doc.addImage(logo.url, 'PNG', M, y, lw, lh);
+      y += lh + 8;
+    }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor.apply(doc, VINO);
+    doc.text('Resoconto di ' + nomeMese, M, y);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, GRIGIO);
+    doc.text('Generato il ' + new Date().toLocaleDateString('it-IT'), 210 - M, y, { align: 'right' });
+    y += 8;
 
-    righe.push([]);
-    righe.push(['COSTI DEL MESE']);
-    righe.push(['Voce', 'Importo', 'Paga']);
-    costi.righe.forEach(function (x) { righe.push([x.etichetta, x.importo, x.paga]); });
-
-    righe.push([]);
+    // --- i tre numeri
     var ccc = r.aziendaliTotali.spettaCCC + r.privatiTotali.spettaCCC - costi.totale / 2;
     var mml = r.aziendaliTotali.spettaMML + r.privatiTotali.spettaMML - costi.totale / 2;
     var saldo = r.aziendaliTotali.saldo + r.privatiTotali.saldo + costi.saldo;
-    righe.push(['TOTALE CCC', Math.round(ccc * 100) / 100]);
-    righe.push(['TOTALE MML', Math.round(mml * 100) / 100]);
-    righe.push([saldo >= 0 ? 'MML deve a CCC' : 'CCC deve a MML', Math.round(Math.abs(saldo) * 100) / 100]);
+    var tessere = [
+      ['Spetta a CCC', eur2(ccc)],
+      ['Spetta a MML', eur2(mml)],
+      [saldo >= 0 ? 'MML deve a CCC' : 'CCC deve a MML', eur2(Math.abs(saldo))]
+    ];
+    var tw = (W - 8) / 3;
+    tessere.forEach(function (t, i) {
+      var x = M + i * (tw + 4);
+      doc.setFillColor.apply(doc, i === 2 ? VINO : CHIARO);
+      doc.roundedRect(x, y, tw, 20, 2.5, 2.5, 'F');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+      doc.setTextColor.apply(doc, i === 2 ? [251, 243, 238] : GRIGIO);
+      doc.text(t[0], x + 4, y + 7);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+      doc.setTextColor.apply(doc, i === 2 ? [255, 255, 255] : VINO);
+      doc.text(t[1], x + 4, y + 15);
+    });
+    y += 28;
 
-    var csv = righe.map(function (riga) {
-      return riga.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
-    }).join('\n');
-    scarica('resoconto-' + r.mese + '.csv', csv);
-  });
+    var stile = {
+      theme: 'grid', margin: { left: M, right: M },
+      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2, lineColor: [225, 210, 215], lineWidth: 0.2, textColor: [40, 30, 35] },
+      headStyles: { fillColor: VINO, textColor: [255, 255, 255], fontStyle: 'bold' },
+      footStyles: { fillColor: CHIARO, textColor: VINO, fontStyle: 'bold' },
+      showFoot: 'lastPage'
+    };
+    var titolo = function (testo, sotto) {
+      if (y > 262) { doc.addPage(); y = 16; }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor.apply(doc, VINO);
+      doc.text(testo, M, y);
+      if (sotto) {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, GRIGIO);
+        doc.text(sotto, 210 - M, y, { align: 'right' });
+      }
+      y += 3;
+    };
+    var finita = function () { y = doc.lastAutoTable.finalY + 10; };
+
+    var at = r.aziendaliTotali, pt = r.privatiTotali;
+
+    // --- chi deve a chi
+    if (y > 235) { doc.addPage(); y = 16; }
+    titolo('Chi deve a chi, e perché');
+    var righe = [
+      ['Eventi aziendali', 'Li fattura MML, e la parte di CCC ce l\'ha lui.', at.saldo],
+      ['Eventi privati', 'Incassa CCC: deve a MML i suoi costi (' + eur2(pt.costiMML) + ') più metà utile (' + eur2(pt.utile / 2) + ').', pt.saldo],
+      ['Costi del mese', 'Metà per uno: chi ha pagato si riprende la metà dell\'altro.', costi.saldo]
+    ];
+    doc.autoTable(Object.assign({}, stile, {
+      startY: y,
+      head: [['Voce', 'Motivo', 'Verso']],
+      body: righe.map(function (x) { return [x[0], x[1], versoTesto(x[2])]; }),
+      foot: [['Alla fine', '', versoTesto(saldo)]],
+      columnStyles: { 0: { cellWidth: 36 }, 2: { cellWidth: 52, fontStyle: 'bold' } }
+    }));
+    finita();
+
+    // --- costi del mese
+    titolo('Costi del mese', 'divisi a metà; chi li ha pagati si riprende la metà dell\'altro');
+    doc.autoTable(Object.assign({}, stile, {
+      startY: y,
+      head: [['Voce', 'Importo', 'Paga', 'Metà a testa', 'Credito di chi paga']],
+      body: costi.righe.map(function (x) {
+        return [x.etichetta, eur2(x.importo), x.paga, eur2(x.importo / 2), eur2(Math.abs(x.credito)) + ' a ' + x.paga];
+      }),
+      foot: [['Totale', eur2(costi.totale), '', eur2(costi.totale / 2), versoTesto(costi.saldo)]],
+      columnStyles: { 1: { halign: 'right' }, 3: { halign: 'right' } }
+    }));
+    finita();
+
+    // --- privati
+    titolo('Dettaglio eventi privati', pt.conta + (pt.conta === 1 ? ' giornata' : ' giornate') + ' · ' + pt.ospiti + ' ospiti');
+    if (r.privati.length) {
+      doc.autoTable(Object.assign({}, stile, {
+        startY: y,
+        head: [['Data', 'Ospiti', 'Incasso', 'Costi MML', 'Costi CCC', 'Utile', 'Spetta CCC', 'Spetta MML']],
+        body: r.privati.map(function (e) {
+          return [dataIt(e.data), e.ospiti, eur2(e.conto.incasso), eur2(e.conto.costiMML),
+                  eur2(e.conto.costiCCC), eur2(e.conto.utile), eur2(e.conto.spettaCCC), eur2(e.conto.spettaMML)];
+        }),
+        foot: [['Totale', pt.ospiti, eur2(pt.incasso), eur2(pt.costiMML), eur2(pt.costiCCC),
+                eur2(pt.utile), eur2(pt.spettaCCC), eur2(pt.spettaMML)]],
+        styles: Object.assign({}, stile.styles, { fontSize: 8 }),
+        columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' },
+                        5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' } }
+      }));
+      finita();
+    } else {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, GRIGIO);
+      doc.text('Nessuna giornata in questo mese.', M, y + 5); y += 14;
+    }
+
+    // --- aziendali
+    titolo('Dettaglio eventi aziendali', at.conta + (at.conta === 1 ? ' evento' : ' eventi'));
+    if (r.aziendali.length) {
+      doc.autoTable(Object.assign({}, stile, {
+        startY: y,
+        head: [['Data', 'Azienda', 'Persone', 'Totale', 'Spetta CCC', 'Spetta MML', 'Saldo']],
+        body: r.aziendali.map(function (e) {
+          return [dataIt(e.data), e.azienda || '-', e.persone, eur2(e.conto.totale),
+                  eur2(e.conto.spettaCCC), eur2(e.conto.spettaMML), versoTesto(e.conto.saldo)];
+        }),
+        foot: [['Totale', '', '', eur2(at.totale), eur2(at.spettaCCC), eur2(at.spettaMML), versoTesto(at.saldo)]],
+        columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } }
+      }));
+      finita();
+    } else {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, GRIGIO);
+      doc.text('Nessun evento in questo mese.', M, y + 5); y += 14;
+    }
+
+    // --- numero di pagina
+    var n = doc.getNumberOfPages();
+    for (var i = 1; i <= n; i++) {
+      doc.setPage(i);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, GRIGIO);
+      doc.text('Mani Milano Lab × Crazy Cat Café · ' + nomeMese, M, 289);
+      doc.text('Pagina ' + i + ' di ' + n, 210 - M, 289, { align: 'right' });
+    }
+
+    doc.save('resoconto-' + r.mese + '.pdf');
+  }
 
 
   /* ----------------------------------------------------- impostazioni */
