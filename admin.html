@@ -380,12 +380,12 @@
               </div>
               <div class="conticino" id="pvCalcFood"></div>
 
-              <div class="campo"><label for="pvPersonale">Personale</label><input type="text" id="pvPersonale" inputmode="numeric" style="width:80px"></div>
-              <div class="campo"><label for="pvOrePersonale">Ore</label><input type="text" id="pvOrePersonale" inputmode="decimal" style="width:80px"></div>
               <div class="campo" style="margin-bottom:4px">
-                <label for="pvCostoPersonale">Costo orario</label>
-                <input type="text" id="pvCostoPersonale" inputmode="decimal" style="width:110px">
+                <label for="pvPersonaleTot">Personale, a giornata</label>
+                <input type="text" id="pvPersonaleTot" inputmode="decimal" style="width:110px">
               </div>
+              <div style="text-align:right; margin-bottom:6px"><button type="button" id="btnUsaFascia" class="azione nascosto"
+                style="min-height:32px; padding:0 12px; font-size:12px; font-weight:400"></button></div>
               <div class="conticino" id="pvCalcPersonale"></div>
 
               <div style="border-top:1px solid rgba(169,201,166,.35); padding-top:14px; display:flex; align-items:baseline; justify-content:space-between; gap:12px">
@@ -1105,6 +1105,21 @@
            '<strong>' + (valore < 0 ? '− ' + euro(-valore) : euro(valore)) + '</strong></div>';
   }
 
+  /** Il personale di CCC costa una cifra unica per giornata, secondo gli ospiti. */
+  function fasciaPersonale(ospiti) {
+    var i = impostazioni || {};
+    var n = function (k, d) { var v = Number(String(i[k] === undefined ? '' : i[k]).replace(',', '.')); return isNaN(v) || i[k] === '' || i[k] === undefined ? d : v; };
+    if (ospiti <= 10) return n('personale_fino_10', 20);
+    if (ospiti <= 30) return n('personale_11_30', 50);
+    if (ospiti <= 50) return n('personale_31_50', 100);
+    return n('personale_da_51', 250);
+  }
+
+  function nomeFascia(ospiti) {
+    return ospiti <= 10 ? 'fino a 10 ospiti' : ospiti <= 30 ? 'da 11 a 30 ospiti'
+      : ospiti <= 50 ? 'da 31 a 50 ospiti' : 'da 51 ospiti in su';
+  }
+
   function numero(id) {
     return Number(String(el(id).value).replace(',', '.')) || 0;
   }
@@ -1119,14 +1134,14 @@
   var privatoCorrente = null;
   var presenzeQR = {};
   var dateGiornate = [];
+  var personaleManuale = false;   // l importo del personale l hai scritto tu, non segue la fascia
   var modoConferma = false;   // giornata nata dalle prenotazioni, ancora da confermare
 
   var CAMPI_PV = {
     pvData: 'data', pvOspiti: 'ospiti', pvPrezzo: 'prezzoTesta',
     pvMateriale: 'materialePersona', pvInsegnanti: 'insegnanti',
     pvOreInsegnante: 'oreInsegnante', pvCostoInsegnante: 'costoInsegnanteOra',
-    pvFood: 'foodPersona', pvPersonale: 'personale',
-    pvOrePersonale: 'orePersonale', pvCostoPersonale: 'costoPersonaleOra',
+    pvFood: 'foodPersona',
     pvNote: 'note'
   };
   var TESTO_PV = ['data', 'note'];
@@ -1204,8 +1219,8 @@
       costoInsegnanteOra: Number(i.alfredo_insegnante_ora) || 20,
       foodPersona: Number(i.alba_cibo_persona) || 6,
       personale: 1,
-      orePersonale: Number(i.alba_ore_giornata) || 10,
-      costoPersonaleOra: Number(i.alba_dipendenti_ora) || 20,
+      orePersonale: 1,
+      costoPersonaleOra: fasciaPersonale(0),
       note: ''
     });
   });
@@ -1218,7 +1233,12 @@
     });
     el('btnEliminaPrivato').classList.toggle('nascosto', !e.id);
     el('titoloPrivati').textContent = e.id ? 'Giornata' : 'Nuova giornata';
+    var importoPers = Math.round((Number(e.personale) || 0) * (Number(e.orePersonale) || 0) * (Number(e.costoPersonaleOra) || 0) * 100) / 100;
+    el('pvPersonaleTot').value = importoPers;
+    // segue la fascia finche non lo cambi tu; se arriva da una giornata con un altro importo, resta com e
+    personaleManuale = !!e.id && importoPers !== fasciaPersonale(Number(e.ospiti) || 0);
     impostaModoConferma(e);
+    if (modoConferma) { personaleManuale = false; el('pvPersonaleTot').value = fasciaPersonale(0); }
     disegnaPrenotati();
     controllaDoppia();
     el('elencoPrivati').classList.add('nascosto');
@@ -1256,6 +1276,11 @@
     el(id).addEventListener('change', ricalcolaPrivato);
   });
   el('pvIncassoTot').addEventListener('input', ricalcolaPrivato);
+  el('pvPersonaleTot').addEventListener('input', function () { personaleManuale = true; });
+  el('btnUsaFascia').addEventListener('click', function () {
+    personaleManuale = false;
+    ricalcolaPrivato();
+  });
 
   el('btnUsaPrenotati').addEventListener('click', function () {
     if (privatoCorrente && privatoCorrente.prenotati) { el('pvOspiti').value = privatoCorrente.prenotati; ricalcolaPrivato(); }
@@ -1272,6 +1297,10 @@
       var campo = CAMPI_PV[id];
       e[campo] = TESTO_PV.indexOf(campo) !== -1 ? el(id).value : numero(id);
     });
+    if (!personaleManuale) el('pvPersonaleTot').value = fasciaPersonale(e.ospiti);
+    e.personale = 1;
+    e.orePersonale = 1;
+    e.costoPersonaleOra = numero('pvPersonaleTot');
     if (modoConferma) {
       e.incassoTotale = numero('pvIncassoTot');
       e.confermato = el('pvOspiti').value.trim() !== '' && el('pvIncassoTot').value.trim() !== '';
@@ -1314,8 +1343,11 @@
     el('pvCalcDocenza').textContent = e.insegnanti + ' × ' + e.oreInsegnante + ' h × ' +
       euro(e.costoInsegnanteOra) + ' = ' + euro(c.docenza);
     el('pvCalcFood').textContent = '× ' + e.ospiti + ' ospiti = ' + euro(c.food);
-    el('pvCalcPersonale').textContent = e.personale + ' × ' + e.orePersonale + ' h × ' +
-      euro(e.costoPersonaleOra) + ' = ' + euro(c.personale);
+    el('pvCalcPersonale').textContent = personaleManuale
+      ? 'importo scelto da te · la fascia per ' + e.ospiti + ' ospiti sarebbe ' + euro(fasciaPersonale(e.ospiti))
+      : 'fascia ' + nomeFascia(e.ospiti) + ' = ' + euro(c.personale);
+    el('btnUsaFascia').classList.toggle('nascosto', !personaleManuale);
+    el('btnUsaFascia').textContent = 'usa la fascia · ' + euro(fasciaPersonale(e.ospiti));
 
     // la giornata e gia salvata e dopo sono arrivate altre prenotazioni? lo dico, non cambio nulla
     var pren = privatoCorrente && privatoCorrente.id && !privatoCorrente.daSalvare
@@ -2278,7 +2310,9 @@
 
       '<div class="blocco ccc"><h4>Costi sostenuti da CCC</h4>' +
       rigaD('Food', c.food, e.ospiti + ' ospiti × ' + euro(e.foodPersona)) +
-      rigaD('Personale', c.personale, numIt(e.personale) + ' × ' + numIt(e.orePersonale) + ' h × ' + euro(e.costoPersonaleOra) + ' all’ora') +
+      rigaD('Personale', c.personale, (e.personale === 1 && e.orePersonale === 1)
+        ? (c.personale === fasciaPersonale(e.ospiti) ? 'fascia ' + nomeFascia(e.ospiti) : 'importo a giornata')
+        : numIt(e.personale) + ' × ' + numIt(e.orePersonale) + ' h × ' + euro(e.costoPersonaleOra) + ' all’ora') +
       rigaD('Totale CCC', c.costiCCC, '', true) + '</div>' +
 
       '</div>' +
@@ -2729,8 +2763,10 @@
       ['alfredo_insegnante_ora', 'Insegnante, all\u2019ora'],
       ['durata_turno_ore', 'Ore di laboratorio'],
       ['alba_cibo_persona', 'Food, a ospite'],
-      ['alba_dipendenti_ora', 'Personale, all\u2019ora'],
-      ['alba_ore_giornata', 'Ore di personale a giornata']
+      ['personale_fino_10', 'Personale CCC · fino a 10 ospiti'],
+      ['personale_11_30', 'Personale CCC · da 11 a 30 ospiti'],
+      ['personale_31_50', 'Personale CCC · da 31 a 50 ospiti'],
+      ['personale_da_51', 'Personale CCC · da 51 ospiti']
     ]},
     { titolo: 'IVA \u00b7 eventi aziendali', campi: [
       ['az_iva_mml', 'IVA su quello che fattura MML (%)'],
