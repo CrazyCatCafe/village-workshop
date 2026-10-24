@@ -133,6 +133,14 @@
 
   body.sola-lettura [data-rs-az], body.sola-lettura [data-rs-pv], body.sola-lettura #btnSalvaCosti { display: none; }
   body.sola-lettura #rsPagaVillage, body.sola-lettura #rsPagaSponsor, body.sola-lettura #rsPagaSuperb, body.sola-lettura #rsPagaGestione { pointer-events: none; }
+  .pren-riga { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 10px 0; border-top: 1px solid rgba(251,243,238,.1); font-size: 14px; }
+  .pren-riga:first-child { border-top: 0; }
+  .pren-riga .ora { width: 52px; font-weight: 700; }
+  .pren-riga .chi { flex: 1 1 160px; min-width: 0; }
+  .pren-riga .chi small { display: block; color: var(--tenue); font-size: 12px; overflow-wrap: anywhere; }
+  .pren-mod { flex: 1 1 100%; background: rgba(251,243,238,.06); border-radius: 12px; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .pren-mod label { font-size: 13px; }
+  .pren-mod input { padding: 8px 10px; font-size: 14px; }
   .pastiglia { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
   .pastiglia.presente { background: var(--salvia); color: #203A1F; }
   .pastiglia.assente { background: transparent; box-shadow: inset 0 0 0 1px var(--salmone); color: var(--salmone); }
@@ -303,22 +311,40 @@
 
           <div style="flex:999 1 420px; min-width:0; display:flex; flex-direction:column; gap:18px">
 
+            <div class="carta nascosto" id="pvPrenotatiCarta" style="box-shadow:inset 0 0 0 1px rgba(227,184,138,.5)">
+              <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:6px">
+                <h2 style="margin:0; color:var(--legno-chiaro)" id="pvPrenotatiTitolo">Prenotati</h2>
+                <span class="pastiglia" style="background:rgba(227,184,138,.25); color:var(--legno-chiaro)">dalle email</span>
+              </div>
+              <div id="pvPrenotatiLista"></div>
+            </div>
+
             <div class="carta">
               <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px">
                 <h2 style="margin:0">Incasso</h2>
                 <span class="pastiglia" style="background:rgba(169,201,166,.25); color:#C9E0C6">incassa CCC</span>
               </div>
-              <div class="campo"><label for="pvData">Data</label><input type="date" id="pvData" style="width:auto"></div>
+              <div class="campo" style="margin-bottom:6px"><label for="pvData">Data</label><input type="date" id="pvData" style="width:auto"></div>
+              <div id="pvDoppia" class="nascosto" style="background:rgba(242,167,159,.18); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:14px; line-height:1.5">
+                <span id="pvDoppiaTesto"></span>
+                <button type="button" class="azione" id="btnApriDoppia" style="min-height:34px; padding:0 12px; font-size:13px; margin-top:8px">Apri quella esistente</button>
+              </div>
               <div class="campo" style="margin-bottom:4px">
                 <label for="pvOspiti">Ospiti</label>
                 <input type="text" id="pvOspiti" inputmode="numeric" style="width:90px">
+              </div>
+              <div id="pvSuggerimentoPren" class="nascosto" style="text-align:right; margin-bottom:8px">
+                <button type="button" id="btnUsaPrenotati" class="azione"
+                        style="min-height:32px; padding:0 12px; font-size:12px; font-weight:400"></button>
               </div>
               <div id="pvSuggerimento" class="nascosto" style="text-align:right; margin-bottom:14px">
                 <button type="button" id="btnUsaQR" class="azione"
                         style="min-height:32px; padding:0 12px; font-size:12px; font-weight:400"></button>
               </div>
-              <div class="campo"><label for="pvPrezzo">A testa, IVA inclusa</label><input type="text" id="pvPrezzo" inputmode="decimal" style="width:120px"></div>
-              <div style="background:rgba(163,117,74,.32); border-radius:12px; padding:14px; display:flex; align-items:center; justify-content:space-between; gap:12px">
+              <div id="pvProvv" class="nascosto" style="font-size:12px; color:var(--legno-chiaro); text-align:right; margin:-2px 0 14px; line-height:1.5"></div>
+              <div class="campo nascosto" id="rigaIncassoTot"><label for="pvIncassoTot">Incasso totale, IVA inclusa</label><input type="text" id="pvIncassoTot" inputmode="decimal" style="width:130px"></div>
+              <div class="campo" id="rigaPrezzo"><label for="pvPrezzo">A testa, IVA inclusa</label><input type="text" id="pvPrezzo" inputmode="decimal" style="width:120px"></div>
+              <div id="boxIncasso" style="background:rgba(163,117,74,.32); border-radius:12px; padding:14px; display:flex; align-items:center; justify-content:space-between; gap:12px">
                 <span style="font-size:14px; color:#F0DAD5">Totale incassato</span>
                 <strong class="conto-grande" id="pvIncasso">€ 0,00</strong>
               </div>
@@ -876,6 +902,8 @@
 
   /* ---------------------------------------------------- livello sala */
 
+  var salaAperte = {};
+
   function caricaSala() {
     var box = el('elencoSala');
     box.innerHTML = '<p style="color:var(--tenue)">Un attimo…</p>';
@@ -891,12 +919,28 @@
           riga.className = 'carta';
           riga.style.cssText = 'display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between; margin-bottom:12px';
           var d = new Date(e.data + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
-          riga.innerHTML = '<strong style="font-family:Fraunces,serif; font-size:20px; text-transform:capitalize">' + escapeHtml(d) + '</strong>' +
+          var np = e.prenotati || 0;
+          riga.innerHTML = '<span style="min-width:0"><strong style="font-family:Fraunces,serif; font-size:20px; text-transform:capitalize; display:block">' + escapeHtml(d) + '</strong>' +
+            (np ? '<button type="button" class="azione" data-prenotati style="min-height:32px; padding:0 12px; font-size:12px; margin-top:6px">' +
+              (salaAperte[e.id] ? 'Nascondi' : 'Prenotazioni') + ' · ' + np + (np === 1 ? ' persona' : ' persone') + '</button>' : '') + '</span>' +
             '<span style="display:flex; gap:10px; align-items:center">' +
             '<input type="text" inputmode="numeric" aria-label="Partecipanti" style="width:90px" value="' + Number(e.ospiti) + '">' +
-            '<button type="button" class="azione piena">Salva</button></span>';
+            '<button type="button" class="azione piena" data-salva-ospiti>Salva</button></span>';
           var campo = riga.querySelector('input');
-          var bt = riga.querySelector('button');
+          var bt = riga.querySelector('[data-salva-ospiti]');
+          var btPren = riga.querySelector('[data-prenotati]');
+          if (btPren) btPren.addEventListener('click', function () {
+            salaAperte[e.id] = !salaAperte[e.id];
+            caricaSala();
+          });
+          if (np && salaAperte[e.id]) {
+            var lista = document.createElement('div');
+            lista.style.cssText = 'flex:1 1 100%; background:rgba(251,243,238,.06); border-radius:12px; padding:6px 16px';
+            (e.prenotazioni || []).forEach(function (x) {
+              lista.appendChild(creaRigaPrenotazione(x, e.data, { elimina: false, dopo: caricaSala }));
+            });
+            riga.appendChild(lista);
+          }
           bt.addEventListener('click', function () {
             bt.disabled = true; bt.textContent = 'Salvo…';
             chiama({ azione: 'salvaOspiti', id: e.id, ospiti: Number(String(campo.value).replace(',', '.')) })
@@ -1074,6 +1118,8 @@
   var eventiPrivati = [];
   var privatoCorrente = null;
   var presenzeQR = {};
+  var dateGiornate = [];
+  var modoConferma = false;   // giornata nata dalle prenotazioni, ancora da confermare
 
   var CAMPI_PV = {
     pvData: 'data', pvOspiti: 'ospiti', pvPrezzo: 'prezzoTesta',
@@ -1085,15 +1131,17 @@
   };
   var TESTO_PV = ['data', 'note'];
 
-  el('mesePrivati').addEventListener('change', caricaPrivati);
+  el('mesePrivati').addEventListener('change', function () { caricaPrivati(); });
 
-  function caricaPrivati() {
+  function caricaPrivati(dopo) {
     chiama({ azione: 'privati', mese: el('mesePrivati').value })
       .then(function (r) {
         eventiPrivati = r.eventi;
         impostazioni = r.impostazioni;
         presenzeQR = r.presenzeQR || {};
+        dateGiornate = r.dateGiornate || [];
         disegnaElencoPrivati();
+        if (typeof dopo === 'function') dopo();
       })
       .catch(function (err) { avvisa('Non riesco a leggere le giornate: ' + err.message, true); });
   }
@@ -1120,15 +1168,20 @@
         '<div style="min-width:0">' +
           '<div style="font-weight:700">' +
             d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }) + '</div>' +
-          '<div style="font-size:12px; color:var(--tenue)">' + e.ospiti + ' ospiti · ' +
-            euroTondo(e.conto.incasso) + ' incassati</div>' +
+          '<div style="font-size:12px; color:var(--tenue)">' +
+            (e.daSalvare
+              ? e.prenotati + ' prenotati · ' + euroTondo(e.incassoProvvisorio) + ' provvisori ' +
+                '<span class="pastiglia" style="background:rgba(227,184,138,.25); color:var(--legno-chiaro)">da confermare</span>'
+              : e.ospiti + ' ospiti · ' + euroTondo(e.conto.incasso) + ' incassati' +
+                (e.prenotati ? ' · ' + e.prenotati + ' prenotati' : '')) +
+          '</div>' +
         '</div>' +
         '<div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap">' +
-          '<div style="text-align:right"><div style="font-size:11px; color:var(--salvia)">CCC</div>' +
+          (e.daSalvare ? '' : '<div style="text-align:right"><div style="font-size:11px; color:var(--salvia)">CCC</div>' +
             '<strong style="font-family:Fraunces,serif; font-size:18px">' + euroTondo(e.conto.spettaCCC) + '</strong></div>' +
           '<div style="text-align:right"><div style="font-size:11px; color:var(--salmone)">MML</div>' +
-            '<strong style="font-family:Fraunces,serif; font-size:18px">' + euroTondo(e.conto.spettaMML) + '</strong></div>' +
-          '<button type="button" class="azione" data-apri-pv="' + i + '">Apri</button>' +
+            '<strong style="font-family:Fraunces,serif; font-size:18px">' + euroTondo(e.conto.spettaMML) + '</strong></div>') +
+          '<button type="button" class="azione" data-apri-pv="' + i + '">' + (e.daSalvare ? 'Conferma' : 'Apri') + '</button>' +
         '</div>';
       n.appendChild(riga);
     });
@@ -1165,15 +1218,47 @@
     });
     el('btnEliminaPrivato').classList.toggle('nascosto', !e.id);
     el('titoloPrivati').textContent = e.id ? 'Giornata' : 'Nuova giornata';
+    impostaModoConferma(e);
+    disegnaPrenotati();
+    controllaDoppia();
     el('elencoPrivati').classList.add('nascosto');
     el('schedaPrivato').classList.remove('nascosto');
     passo({ s: 'app', modo: modo, vista: 'privati', scheda: true });
     ricalcolaPrivato();
   }
 
+  /**
+   * Una giornata nata dalle prenotazioni non si conferma sui numeri provvisori:
+   * ospiti e incasso li scrivi tu, e senza non si conferma.
+   */
+  function impostaModoConferma(e) {
+    modoConferma = !!(e && e.id && e.daSalvare);
+    el('rigaIncassoTot').classList.toggle('nascosto', !modoConferma);
+    el('rigaPrezzo').classList.toggle('nascosto', modoConferma);
+    el('boxIncasso').classList.toggle('nascosto', modoConferma);
+    el('pvProvv').classList.toggle('nascosto', !modoConferma);
+    el('btnSalvaPrivato').textContent = modoConferma ? 'Conferma la giornata' : 'Salva la giornata';
+    el('pvOspiti').placeholder = '';
+    el('pvIncassoTot').placeholder = '';
+    if (!modoConferma) return;
+    el('pvOspiti').value = '';
+    el('pvIncassoTot').value = '';
+    el('pvOspiti').placeholder = String(e.prenotati || 0);
+    el('pvIncassoTot').placeholder = String(e.incassoProvvisorio || 0);
+    el('pvProvv').textContent = 'Provvisorio dalle prenotazioni: ' + (e.prenotati || 0) + ' ospiti · ' +
+      euroTondo(e.incassoProvvisorio || 0) +
+      (e.ospiti !== e.prenotati ? ' · la sala ha scritto ' + e.ospiti : '') +
+      '. Scrivi i numeri definitivi per confermare.';
+  }
+
   Object.keys(CAMPI_PV).forEach(function (id) {
     el(id).addEventListener('input', ricalcolaPrivato);
     el(id).addEventListener('change', ricalcolaPrivato);
+  });
+  el('pvIncassoTot').addEventListener('input', ricalcolaPrivato);
+
+  el('btnUsaPrenotati').addEventListener('click', function () {
+    if (privatoCorrente && privatoCorrente.prenotati) { el('pvOspiti').value = privatoCorrente.prenotati; ricalcolaPrivato(); }
   });
 
   el('btnUsaQR').addEventListener('click', function () {
@@ -1187,6 +1272,11 @@
       var campo = CAMPI_PV[id];
       e[campo] = TESTO_PV.indexOf(campo) !== -1 ? el(id).value : numero(id);
     });
+    if (modoConferma) {
+      e.incassoTotale = numero('pvIncassoTot');
+      e.confermato = el('pvOspiti').value.trim() !== '' && el('pvIncassoTot').value.trim() !== '';
+      e.prezzoTesta = e.ospiti > 0 ? e.incassoTotale / e.ospiti : 0;
+    }
     return e;
   }
 
@@ -1226,6 +1316,13 @@
     el('pvCalcFood').textContent = '× ' + e.ospiti + ' ospiti = ' + euro(c.food);
     el('pvCalcPersonale').textContent = e.personale + ' × ' + e.orePersonale + ' h × ' +
       euro(e.costoPersonaleOra) + ' = ' + euro(c.personale);
+
+    // la giornata e gia salvata e dopo sono arrivate altre prenotazioni? lo dico, non cambio nulla
+    var pren = privatoCorrente && privatoCorrente.id && !privatoCorrente.daSalvare
+      ? (privatoCorrente.prenotati || 0) : 0;
+    var avvisaPren = pren && pren !== e.ospiti;
+    el('pvSuggerimentoPren').classList.toggle('nascosto', !avvisaPren);
+    if (avvisaPren) el('btnUsaPrenotati').textContent = 'ci sono ' + pren + ' prenotati · usa ' + pren + ' come ospiti';
 
     // il QR ha contato delle presenze per questa data? lo propongo e basta
     var daQR = presenzeQR[e.data];
@@ -1293,19 +1390,176 @@
   el('btnSalvaPrivato').addEventListener('click', function () {
     var e = leggiFormPrivato();
     if (!e.data) { avvisa('Serve la data.', true); return; }
+    if (modoConferma) {
+      if (!e.confermato) {
+        avvisa('Per confermare scrivi il numero definitivo di ospiti e l’incasso totale.', true);
+        el(el('pvOspiti').value.trim() === '' ? 'pvOspiti' : 'pvIncassoTot').focus();
+        return;
+      }
+      if (e.ospiti === 0 && e.incassoTotale > 0) { avvisa('Con 0 ospiti l’incasso deve essere 0.', true); return; }
+    }
+    var testoConferma = modoConferma
+      ? 'Confermo la giornata di ' + dataLunga(e.data) + '?\n\n' + e.ospiti + ' ospiti · incasso ' + euro(e.incassoTotale) +
+        '\n\nDa qui in poi entra nei resoconti.'
+      : 'Salvo la giornata di ' + dataLunga(e.data) + '?';
+    if (!confirm(testoConferma)) return;
+    var doppia = giornataStessoGiorno(e.data);
+    var forza = false;
+    if (doppia && !e.id) {
+      if (!confirm('Esiste già una giornata per questo giorno. Ne creo comunque una seconda?')) return;
+      forza = true;
+    }
     var b = el('btnSalvaPrivato');
     b.disabled = true; b.textContent = 'Salvo…';
-    chiama({ azione: 'salvaPrivato', evento: e })
+    chiama({ azione: 'salvaPrivato', evento: e, forza: forza })
       .then(function (r) {
-        avvisa('Giornata salvata.');
+        avvisa(modoConferma ? 'Giornata confermata.' : 'Giornata salvata.');
         privatoCorrente = r.evento;
         caricaPrivati();
       })
       .catch(function (err) { avvisa('Non salvata: ' + err.message, true); })
-      .finally(function () { b.disabled = false; b.textContent = 'Salva la giornata'; });
+      .finally(function () { b.disabled = false; b.textContent = modoConferma ? 'Conferma la giornata' : 'Salva la giornata'; });
   });
 
   el('btnChiudiPrivato').addEventListener('click', disegnaElencoPrivati);
+
+  /* ------------------------------------------------ doppioni e prenotati */
+
+  function giornataStessoGiorno(data) {
+    var mio = privatoCorrente ? privatoCorrente.id : '';
+    return dateGiornate.filter(function (d) { return d.data === data && d.id !== mio; })[0] || null;
+  }
+
+  function dataLunga(iso) {
+    return new Date(iso + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
+  function controllaDoppia() {
+    var d = giornataStessoGiorno(el('pvData').value);
+    el('pvDoppia').classList.toggle('nascosto', !d);
+    if (d) el('pvDoppiaTesto').textContent = 'Per ' + dataLunga(d.data) + ' esiste già una giornata.';
+  }
+  el('pvData').addEventListener('change', controllaDoppia);
+  el('pvData').addEventListener('input', controllaDoppia);
+
+  el('btnApriDoppia').addEventListener('click', function () {
+    var d = giornataStessoGiorno(el('pvData').value);
+    if (!d) return;
+    var trova = function () {
+      var ev = eventiPrivati.filter(function (x) { return x.id === d.id; })[0];
+      if (ev) apriPrivato(ev);
+    };
+    if (eventiPrivati.some(function (x) { return x.id === d.id; })) { trova(); return; }
+    el('mesePrivati').value = d.data.slice(0, 7);
+    caricaPrivati(trova);
+  });
+
+  function disegnaPrenotati() {
+    var e = privatoCorrente;
+    var lista = (e && e.prenotazioni) || [];
+    var carta = el('pvPrenotatiCarta');
+    carta.classList.toggle('nascosto', !lista.length);
+    if (!lista.length) return;
+
+    var tot = lista.reduce(function (s, x) { return s + x.posti; }, 0);
+    var provv = lista.reduce(function (s, x) { return s + x.posti * (x.prezzo || e.prezzoTesta || 0); }, 0);
+    el('pvPrenotatiTitolo').textContent = 'Prenotati · ' + tot + (tot === 1 ? ' persona' : ' persone') +
+      ' · ' + euroTondo(provv) + (modoConferma ? ' provvisori' : ' da prenotazioni');
+
+    var box = el('pvPrenotatiLista');
+    box.innerHTML = '';
+    lista.forEach(function (x) {
+      box.appendChild(creaRigaPrenotazione(x, e.data, { elimina: true, dopo: aggiornaPrenotati }));
+    });
+  }
+
+  /**
+   * Una prenotazione, con "Modifica" per cambiare data o posti.
+   * La usano sia l'admin sia la sala; solo l'admin puo eliminarla.
+   */
+  function creaRigaPrenotazione(x, dataGiornata, opz) {
+    var riga = document.createElement('div');
+    riga.className = 'pren-riga';
+    var stato = x.stato === 'Presente' ? '<span class="pastiglia presente">presente</span>'
+      : x.stato === 'Assente' ? '<span class="pastiglia assente">assente</span>'
+      : '<span class="pastiglia attesa">in attesa</span>';
+    riga.innerHTML =
+      '<span class="ora">' + (x.turno || '—') + '</span>' +
+      '<span class="chi">' + escapeHtml(x.nome || 'Senza nome') + ' · ' + x.posti + (x.posti === 1 ? ' posto' : ' posti') +
+        '<small>' + escapeHtml([x.email, x.note].filter(String).join(' · ')) + '</small></span>' +
+      stato +
+      '<button type="button" class="azione" style="min-height:34px; padding:0 12px; font-size:13px">Modifica</button>';
+    var pannello = null;
+    riga.querySelector('button').addEventListener('click', function () {
+      if (pannello) { pannello.remove(); pannello = null; return; }
+      pannello = document.createElement('div');
+      pannello.className = 'pren-mod';
+      pannello.innerHTML =
+        '<label>Data <input type="date" data-f="data" value="' + dataGiornata + '" style="width:auto"></label>' +
+        '<label>Posti <input type="text" inputmode="numeric" data-f="posti" value="' + x.posti + '" style="width:70px; text-align:center"></label>' +
+        '<button type="button" class="azione piena" data-f="salva" style="min-height:36px; padding:0 14px; font-size:13px">Salva</button>' +
+        (opz.elimina
+          ? '<button type="button" class="azione" data-f="elimina" style="min-height:36px; padding:0 14px; font-size:13px; color:#F2A79F; border-color:rgba(242,167,159,.5)">Elimina prenotazione</button>'
+          : '');
+      riga.appendChild(pannello);
+      pannello.querySelector('[data-f="salva"]').addEventListener('click', function () {
+        var data = pannello.querySelector('[data-f="data"]').value;
+        var posti = Number(String(pannello.querySelector('[data-f="posti"]').value).replace(',', '.'));
+        if (!data) { avvisa('Serve la data.', true); return; }
+        if (!(posti >= 1)) { avvisa('Metti almeno un posto.', true); return; }
+        var chi = x.nome || 'questa persona';
+        var spostata = data !== dataGiornata;
+        if (!spostata && posti === x.posti) { avvisa('Non hai cambiato nulla.', true); return; }
+        var domanda = spostata
+          ? 'Sposto la prenotazione di ' + chi + ' da ' + dataLunga(dataGiornata) + ' a ' + dataLunga(data) +
+            (posti !== x.posti ? ', con ' + posti + (posti === 1 ? ' posto' : ' posti') : '') + '?'
+          : 'Cambio i posti di ' + chi + ' da ' + x.posti + ' a ' + posti + '?';
+        if (!confirm(domanda)) return;
+        chiama({ azione: 'salvaPrenotazione', id: x.id, data: data, posti: posti })
+          .then(function (r) {
+            avvisa(r.spostata
+              ? 'Spostata a ' + dataLunga(r.data) + (r.giornataCreata ? ': ho creato la giornata.' : '.')
+              : 'Prenotazione aggiornata.');
+            opz.dopo();
+          })
+          .catch(function (err) { avvisa('Non salvata: ' + err.message, true); });
+      });
+      var el_ = pannello.querySelector('[data-f="elimina"]');
+      if (el_) el_.addEventListener('click', function () {
+        if (!confirm('Eliminare la prenotazione di ' + (x.nome || 'questa persona') + '? Non si torna indietro.')) return;
+        chiama({ azione: 'eliminaPrenotazione', id: x.id })
+          .then(function () { avvisa('Prenotazione eliminata.'); opz.dopo(); })
+          .catch(function (err) { avvisa('Non eliminata: ' + err.message, true); });
+      });
+    });
+    return riga;
+  }
+
+  /** Rilegge le giornate senza toccare quello che stai scrivendo nei campi. */
+  function aggiornaPrenotati() {
+    var idCorrente = privatoCorrente ? privatoCorrente.id : '';
+    chiama({ azione: 'privati', mese: el('mesePrivati').value })
+      .then(function (r) {
+        eventiPrivati = r.eventi;
+        impostazioni = r.impostazioni;
+        presenzeQR = r.presenzeQR || {};
+        dateGiornate = r.dateGiornate || [];
+        var nuovo = eventiPrivati.filter(function (x) { return x.id === idCorrente; })[0];
+        if (!nuovo) { disegnaElencoPrivati(); return; }   // la giornata e sparita (era vuota e non salvata)
+        var ospitiPrima = privatoCorrente.ospiti;
+        var invariato = Number(el('pvOspiti').value) === ospitiPrima;
+        privatoCorrente.prenotazioni = nuovo.prenotazioni;
+        privatoCorrente.prenotati = nuovo.prenotati;
+        privatoCorrente.daSalvare = nuovo.daSalvare;
+        if (nuovo.daSalvare && invariato) {   // non l hai toccato: segue i prenotati
+          privatoCorrente.ospiti = nuovo.ospiti;
+          el('pvOspiti').value = nuovo.ospiti;
+        }
+        disegnaPrenotati();
+        ricalcolaPrivato();
+      })
+      .catch(function (err) { avvisa('Non riesco a rileggere le giornate: ' + err.message, true); });
+  }
 
   el('btnEliminaPrivato').addEventListener('click', function () {
     if (!privatoCorrente || !privatoCorrente.id) return;
