@@ -927,11 +927,21 @@
 
   var salaAperte = {};
 
-  function caricaSala() {
+  var cacheSala = null;
+  function caricaSala(solo) {
     var box = el('elencoSala');
-    box.innerHTML = '<p style="color:var(--tenue)">Un attimo…</p>';
+    if (solo && cacheSala) { disegnaSala(cacheSala); return; }
+    if (cacheSala) disegnaSala(cacheSala);
+    else box.innerHTML = '<p style="color:var(--tenue)">Un attimo…</p>';
     chiama({ azione: 'privati' })
-      .then(function (r) {
+      .then(function (r) { cacheSala = r; disegnaSala(r); })
+      .catch(function (err) { if (!cacheSala) { box.innerHTML = ''; } avvisa(err.message, true); });
+  }
+
+  function disegnaSala(r) {
+    var box = el('elencoSala');
+    {
+      {
         if (!r.eventi.length) {
           box.innerHTML = '<p style="color:var(--tenue); font-size:15px">Nessuna giornata.</p>';
           return;
@@ -957,7 +967,7 @@
           var btPren = riga.querySelector('[data-prenotati]');
           if (btPren) btPren.addEventListener('click', function () {
             salaAperte[e.id] = !salaAperte[e.id];
-            caricaSala();
+            caricaSala(true);
           });
           if (np && salaAperte[e.id]) {
             var lista = document.createElement('div');
@@ -972,6 +982,7 @@
             chiama({ azione: 'salvaOspiti', id: e.id, ospiti: Number(String(campo.value).replace(',', '.')) })
               .then(function (x) {
                 campo.value = x.evento.ospiti;
+                if (cacheSala) cacheSala.eventi.forEach(function (z) { if (z.id === e.id) z.ospiti = x.evento.ospiti; });
                 avvisa('Salvato: ' + x.evento.ospiti + ' partecipanti.');
               })
               .catch(function (err) { avvisa('Non salvato: ' + err.message, true); })
@@ -979,8 +990,8 @@
           });
           box.appendChild(riga);
         });
-      })
-      .catch(function (err) { box.innerHTML = ''; avvisa(err.message, true); });
+      }
+    }
   }
   el('meseSala').addEventListener('change', caricaSala);
 
@@ -1127,11 +1138,22 @@
 
   /** Livello resoconti: le prenotazioni, solo da guardare. */
   var prenotatiAperte = {};
-  function caricaPrenotati() {
+  var cachePrenotati = null;
+  /** Apre la pagina subito con quello che ho gia, poi aggiorna in silenzio. solo=true: niente chiamata (apri/chiudi dettagli). */
+  function caricaPrenotati(solo) {
     var box = el('elencoPrenotati');
-    box.innerHTML = '<p style="color:var(--tenue)">Un attimo…</p>';
+    if (cachePrenotati) disegnaElencoPrenotati(cachePrenotati);
+    else box.innerHTML = '<p style="color:var(--tenue)">Un attimo…</p>';
+    if (solo && cachePrenotati) return;
     chiama({ azione: 'privati' })
-      .then(function (r) {
+      .then(function (r) { cachePrenotati = r; disegnaElencoPrenotati(r); })
+      .catch(function (err) { if (!cachePrenotati) box.innerHTML = '<p style="color:var(--tenue)">Non riesco a caricare: ' + escapeHtml(err.message) + '</p>'; });
+  }
+
+  function disegnaElencoPrenotati(r) {
+    var box = el('elencoPrenotati');
+    {
+      {
         var giorni = r.eventi.filter(function (e) { return (e.prenotazioni || []).length; })
           .sort(function (a, b) { return a.data < b.data ? 1 : -1; });
         if (!giorni.length) {
@@ -1160,7 +1182,7 @@
             '<button type="button" class="azione" style="min-height:36px; padding:0 14px; font-size:13px">' + (aperta ? 'Chiudi dettagli' : 'Dettagli') + '</button>';
           c.querySelector('button').addEventListener('click', function () {
             prenotatiAperte[e.id] = !aperta;
-            caricaPrenotati();
+            caricaPrenotati(true);
           });
           if (aperta) {
             var l = document.createElement('div');
@@ -1174,8 +1196,8 @@
           }
           box.appendChild(c);
         });
-      })
-      .catch(function (err) { box.innerHTML = '<p style="color:var(--tenue)">Non riesco a caricare: ' + escapeHtml(err.message) + '</p>'; });
+      }
+    }
   }
 
   /* ---------------------------------------------------------- in comune */
@@ -1230,6 +1252,8 @@
   el('mesePrivati').addEventListener('change', function () { caricaPrivati(); });
 
   function caricaPrivati(dopo) {
+    // riapro subito l'elenco che ho gia; la versione fresca arriva dopo
+    if (!dopo && eventiPrivati && eventiPrivati.length) disegnaElencoPrivati();
     chiama({ azione: 'privati' })
       .then(function (r) {
         eventiPrivati = r.eventi;
