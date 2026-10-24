@@ -826,7 +826,10 @@
     if (testo && !male) setTimeout(function () { n.classList.add('nascosto'); }, 4000);
   }
 
-  function chiama(dati) {
+  // azioni che si possono ripetere senza danni se la risposta si perde
+  var SOLO_LETTURA = /^(accedi|io|privati|resoconto|mese|giornata|aziendali|impostazioni|consensi|cerca)$/;
+
+  function chiama(dati, secondoGiro) {
     var corpo = new URLSearchParams();
     corpo.append('token', token);
     Object.keys(dati).forEach(function (k) {
@@ -836,11 +839,20 @@
     var ctrl = new AbortController();
     var scaduto = setTimeout(function () { ctrl.abort(); }, 60000);
     return fetch(API, { method: 'POST', body: corpo, signal: ctrl.signal })
-      .then(function (r) { clearTimeout(scaduto); return r.json(); }, function (e) {
+      .then(function (r) { clearTimeout(scaduto); return r.text(); }, function (e) {
         clearTimeout(scaduto);
         throw new Error(e && e.name === 'AbortError' ? 'Il server non risponde: riprova tra poco' : (e && e.message) || 'Connessione assente');
       })
-      .then(function (r) {
+      .then(function (testo) {
+        var r;
+        try { r = JSON.parse(testo); } catch (e) {
+          // Google a volte risponde con una pagina web al posto dei dati: se la richiesta si puo ripetere, riprovo una volta
+          if (!secondoGiro && SOLO_LETTURA.test(String(dati.azione))) {
+            return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return chiama(dati, true); });
+          }
+          var t = String(testo).match(/<title>([^<]*)<\/title>/i);
+          throw new Error('Il server ha risposto in modo strano' + (t ? ' (' + t[1].trim().slice(0, 60) + ')' : '') + '. Riprova tra qualche secondo.');
+        }
         if (!r.ok) throw new Error(r.errore || 'Errore');
         return r;
       });
