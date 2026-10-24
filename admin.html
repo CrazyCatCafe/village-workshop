@@ -1120,13 +1120,14 @@
   });
 
   /** Livello resoconti: le prenotazioni, solo da guardare. */
+  var prenotatiAperte = {};
   function caricaPrenotati() {
     var box = el('elencoPrenotati');
     box.innerHTML = '<p style="color:var(--tenue)">Un attimo…</p>';
     chiama({ azione: 'privati', mese: el('mesePrenotati').value })
       .then(function (r) {
         var giorni = r.eventi.filter(function (e) { return (e.prenotazioni || []).length; })
-          .sort(function (a, b) { return a.data < b.data ? -1 : 1; });
+          .sort(function (a, b) { return a.data < b.data ? 1 : -1; });
         if (!giorni.length) {
           box.innerHTML = '<p style="color:var(--tenue); font-size:15px">Nessuna prenotazione in questo mese.</p>';
           return;
@@ -1136,15 +1137,25 @@
           var d = new Date(e.data + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
           var c = document.createElement('div');
           c.className = 'carta';
-          c.style.marginBottom = '12px';
-          var righe = e.prenotazioni.map(function (x) {
-            return '<div class="pren-riga"><span class="ora">' + escapeHtml(x.turno || '—') + '</span>' +
-              '<span class="chi">' + escapeHtml(x.nome || 'Senza nome') + ' · ' + x.posti + (x.posti === 1 ? ' posto' : ' posti') +
-              '<small>' + escapeHtml(x.note || '') + '</small></span></div>';
-          }).join('');
-          c.innerHTML = '<strong style="font-family:Fraunces,serif; font-size:20px; text-transform:capitalize; display:block">' + escapeHtml(d) + '</strong>' +
-            '<span style="color:var(--tenue); font-size:13px">' + e.prenotati + (e.prenotati === 1 ? ' prenotato' : ' prenotati') + '</span>' +
-            '<div style="margin-top:8px">' + righe + '</div>';
+          c.style.cssText = 'margin-bottom:12px; display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; justify-content:space-between';
+          var aperta = !!prenotatiAperte[e.id];
+          c.innerHTML = '<span><strong style="font-family:Fraunces,serif; font-size:20px; text-transform:capitalize; display:block">' + escapeHtml(d) + '</strong>' +
+            '<span style="color:var(--tenue); font-size:14px">' + e.prenotati + (e.prenotati === 1 ? ' prenotato' : ' prenotati') + '</span></span>' +
+            '<button type="button" class="azione" style="min-height:36px; padding:0 14px; font-size:13px">' + (aperta ? 'Chiudi dettagli' : 'Dettagli') + '</button>';
+          c.querySelector('button').addEventListener('click', function () {
+            prenotatiAperte[e.id] = !aperta;
+            caricaPrenotati();
+          });
+          if (aperta) {
+            var l = document.createElement('div');
+            l.style.cssText = 'flex:1 1 100%; background:rgba(251,243,238,.06); border-radius:12px; padding:6px 16px';
+            l.innerHTML = e.prenotazioni.map(function (x) {
+              return '<div class="pren-riga"><span class="ora">' + escapeHtml(x.turno || '—') + '</span>' +
+                '<span class="chi">' + escapeHtml(x.nome || 'Senza nome') + ' · ' + x.posti + (x.posti === 1 ? ' posto' : ' posti') +
+                '<small>' + escapeHtml(x.note || '') + '</small></span></div>';
+            }).join('');
+            c.appendChild(l);
+          }
           box.appendChild(c);
         });
       })
