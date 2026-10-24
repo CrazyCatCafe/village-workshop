@@ -277,6 +277,7 @@
     <button type="button" data-vista="privati" data-modo="privati" aria-current="page">Eventi privati</button>
     <button type="button" data-vista="iscritti" data-modo="privati">Iscritti</button>
     <button type="button" data-vista="aziendali" data-modo="aziendali">Eventi aziendali</button>
+    <button type="button" data-vista="prenotati" data-modo="nessuno" class="nascosto">Prenotati</button>
     <button type="button" data-vista="resoconti" data-modo="tutti">Resoconti</button>
     <button type="button" data-vista="impostazioni" data-modo="tutti">Impostazioni</button>
     <button type="button" id="btnCambiaModo" style="margin-top:auto; color:#D29FAD">← Pagina principale</button>
@@ -712,6 +713,19 @@
     </div>
 
 
+    <!-- PRENOTATI: sola lettura, per il livello resoconti ------------- -->
+    <div data-pagina="prenotati" class="nascosto">
+      <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
+        <h1>Prenotati</h1>
+        <div style="display:flex; gap:10px; align-items:center">
+          <label for="mesePrenotati" style="font-size:13px">Mese</label>
+          <input type="month" id="mesePrenotati" style="width:auto">
+        </div>
+      </div>
+      <p style="color:var(--tenue); font-size:15px; margin:0 0 18px; max-width:60ch">Le giornate con prenotazioni, in ordine di data. Solo lettura.</p>
+      <div id="elencoPrenotati"></div>
+    </div>
+
     <!-- SALA: solo i partecipanti -------------------------------------- -->
     <div data-pagina="sala" class="nascosto">
       <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
@@ -898,8 +912,9 @@
       });
       var voceResoconti = document.querySelector('nav button[data-vista="resoconti"]');
       voceResoconti.classList.remove('nascosto');
-      vaiA('resoconti');
-      caricaResoconto();
+      document.querySelector('nav button[data-vista="prenotati"]').classList.remove('nascosto');
+      vaiA('prenotati');
+      caricaPrenotati();
     }
     return Promise.resolve();
   }
@@ -979,6 +994,7 @@
     el('meseAziendali').value = oggiISO().slice(0, 7);
     el('meseResoconto').value = oggiISO().slice(0, 7);
     el('meseSala').value = oggiISO().slice(0, 7);
+    el('mesePrenotati').value = oggiISO().slice(0, 7);
     el('consensiDa').value = oggiISO().slice(0, 8) + '01';
     el('consensiA').value = oggiISO();
   }
@@ -1099,8 +1115,42 @@
       if (vista === 'privati') caricaPrivati();
       if (vista === 'aziendali') caricaAziendali();
       if (vista === 'resoconti') caricaResoconto();
+      if (vista === 'prenotati') caricaPrenotati();
     });
   });
+
+  /** Livello resoconti: le prenotazioni, solo da guardare. */
+  function caricaPrenotati() {
+    var box = el('elencoPrenotati');
+    box.innerHTML = '<p style="color:var(--tenue)">Un attimo…</p>';
+    chiama({ azione: 'privati', mese: el('mesePrenotati').value })
+      .then(function (r) {
+        var giorni = r.eventi.filter(function (e) { return (e.prenotazioni || []).length; })
+          .sort(function (a, b) { return a.data < b.data ? -1 : 1; });
+        if (!giorni.length) {
+          box.innerHTML = '<p style="color:var(--tenue); font-size:15px">Nessuna prenotazione in questo mese.</p>';
+          return;
+        }
+        box.innerHTML = '';
+        giorni.forEach(function (e) {
+          var d = new Date(e.data + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+          var c = document.createElement('div');
+          c.className = 'carta';
+          c.style.marginBottom = '12px';
+          var righe = e.prenotazioni.map(function (x) {
+            return '<div class="pren-riga"><span class="ora">' + escapeHtml(x.turno || '—') + '</span>' +
+              '<span class="chi">' + escapeHtml(x.nome || 'Senza nome') + ' · ' + x.posti + (x.posti === 1 ? ' posto' : ' posti') +
+              '<small>' + escapeHtml(x.note || '') + '</small></span></div>';
+          }).join('');
+          c.innerHTML = '<strong style="font-family:Fraunces,serif; font-size:20px; text-transform:capitalize; display:block">' + escapeHtml(d) + '</strong>' +
+            '<span style="color:var(--tenue); font-size:13px">' + e.prenotati + (e.prenotati === 1 ? ' prenotato' : ' prenotati') + '</span>' +
+            '<div style="margin-top:8px">' + righe + '</div>';
+          box.appendChild(c);
+        });
+      })
+      .catch(function (err) { box.innerHTML = '<p style="color:var(--tenue)">Non riesco a caricare: ' + escapeHtml(err.message) + '</p>'; });
+  }
+  el('mesePrenotati').addEventListener('change', caricaPrenotati);
 
   /* ---------------------------------------------------------- in comune */
 
