@@ -408,7 +408,7 @@
 
           <div style="flex:1 1 300px; min-width:0; display:flex; flex-direction:column; gap:18px">
             <div class="carta">
-              <h2>Il conto</h2>
+              <h2 id="pvContoTitolo">Il conto</h2>
               <div id="pvConto"></div>
             </div>
             <div class="carta" style="box-shadow:inset 0 0 0 1px rgba(169,201,166,.55)">
@@ -1134,6 +1134,7 @@
   var privatoCorrente = null;
   var presenzeQR = {};
   var dateGiornate = [];
+  var contoProvvisorio = false;   // i conti usano ancora i numeri delle prenotazioni
   var personaleManuale = false;   // l importo del personale l hai scritto tu, non segue la fascia
   var modoConferma = false;   // giornata nata dalle prenotazioni, ancora da confermare
 
@@ -1238,7 +1239,7 @@
     // segue la fascia finche non lo cambi tu; se arriva da una giornata con un altro importo, resta com e
     personaleManuale = !!e.id && importoPers !== fasciaPersonale(Number(e.ospiti) || 0);
     impostaModoConferma(e);
-    if (modoConferma) { personaleManuale = false; el('pvPersonaleTot').value = fasciaPersonale(0); }
+    if (modoConferma) personaleManuale = false;
     disegnaPrenotati();
     controllaDoppia();
     el('elencoPrivati').classList.add('nascosto');
@@ -1263,6 +1264,7 @@
     if (!modoConferma) return;
     el('pvOspiti').value = '';
     el('pvIncassoTot').value = '';
+    el('pvPersonaleTot').value = fasciaPersonale(Number(e.prenotati) || 0);
     el('pvOspiti').placeholder = String(e.prenotati || 0);
     el('pvIncassoTot').placeholder = String(e.incassoProvvisorio || 0);
     el('pvProvv').textContent = 'Provvisorio dalle prenotazioni: ' + (e.prenotati || 0) + ' ospiti · ' +
@@ -1297,13 +1299,20 @@
       var campo = CAMPI_PV[id];
       e[campo] = TESTO_PV.indexOf(campo) !== -1 ? el(id).value : numero(id);
     });
+    // giornata da confermare: finche non scrivi i numeri veri, i conti usano quelli delle prenotazioni
+    var provvOspiti = false, provvIncasso = false;
+    if (modoConferma && privatoCorrente) {
+      if (el('pvOspiti').value.trim() === '') { e.ospiti = Number(privatoCorrente.prenotati) || 0; provvOspiti = true; }
+      if (el('pvIncassoTot').value.trim() === '') provvIncasso = true;
+    }
+    contoProvvisorio = provvOspiti || provvIncasso;
     if (!personaleManuale) el('pvPersonaleTot').value = fasciaPersonale(e.ospiti);
     e.personale = 1;
     e.orePersonale = 1;
     e.costoPersonaleOra = numero('pvPersonaleTot');
     if (modoConferma) {
-      e.incassoTotale = numero('pvIncassoTot');
-      e.confermato = el('pvOspiti').value.trim() !== '' && el('pvIncassoTot').value.trim() !== '';
+      e.confermato = !provvOspiti && !provvIncasso;
+      e.incassoTotale = provvIncasso ? (Number(privatoCorrente && privatoCorrente.incassoProvvisorio) || 0) : numero('pvIncassoTot');
       e.prezzoTesta = e.ospiti > 0 ? e.incassoTotale / e.ospiti : 0;
     }
     return e;
@@ -1333,6 +1342,7 @@
     var e = leggiFormPrivato();
     var c = contoPrivatoDi(e);
 
+    el('pvContoTitolo').textContent = contoProvvisorio ? 'Il conto · provvisorio' : 'Il conto';
     el('pvIncasso').textContent = euro(c.incasso);
     el('pvCostiMML').textContent = euro(c.costiMML);
     el('pvCostiCCC').textContent = euro(c.costiCCC);
@@ -1501,7 +1511,7 @@
     var box = el('pvPrenotatiLista');
     box.innerHTML = '';
     lista.forEach(function (x) {
-      box.appendChild(creaRigaPrenotazione(x, e.data, { elimina: true, dopo: aggiornaPrenotati }));
+      box.appendChild(creaRigaPrenotazione(x, e.data, { elimina: true, dopo: aggiornaPrenotati, prezzoDefault: Number(e.prezzoTesta) || 0 }));
     });
   }
 
@@ -1512,14 +1522,16 @@
   function creaRigaPrenotazione(x, dataGiornata, opz) {
     var riga = document.createElement('div');
     riga.className = 'pren-riga';
+    // lo stato si vede solo dopo il check-in con il QR: prima non c e nulla da confermare
     var stato = x.stato === 'Presente' ? '<span class="pastiglia presente">presente</span>'
-      : x.stato === 'Assente' ? '<span class="pastiglia assente">assente</span>'
-      : '<span class="pastiglia attesa">in attesa</span>';
+      : x.stato === 'Assente' ? '<span class="pastiglia assente">assente</span>' : '';
+    var importo = opz.prezzoDefault !== undefined
+      ? '<strong style="white-space:nowrap">' + euroTondo(x.posti * (x.prezzo || opz.prezzoDefault)) + '</strong>' : '';
     riga.innerHTML =
       '<span class="ora">' + (x.turno || '—') + '</span>' +
       '<span class="chi">' + escapeHtml(x.nome || 'Senza nome') + ' · ' + x.posti + (x.posti === 1 ? ' posto' : ' posti') +
         '<small>' + escapeHtml([x.email, x.note].filter(String).join(' · ')) + '</small></span>' +
-      stato +
+      stato + importo +
       '<button type="button" class="azione" style="min-height:34px; padding:0 12px; font-size:13px">Modifica</button>';
     var pannello = null;
     riga.querySelector('button').addEventListener('click', function () {
