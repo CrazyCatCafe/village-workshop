@@ -292,8 +292,7 @@
       <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
         <h1 id="titoloPrivati">Eventi privati</h1>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
-          <label for="mesePrivati" style="font-size:13px">Mese</label>
-          <input type="month" id="mesePrivati" style="width:auto">
+          <input type="month" id="mesePrivati" style="display:none">
           <button type="button" class="azione piena" id="btnNuovoPrivato">Nuova giornata</button>
         </div>
       </div>
@@ -726,10 +725,7 @@
     <div data-pagina="sala" class="nascosto">
       <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
         <h1>Partecipanti</h1>
-        <div style="display:flex; gap:10px; align-items:center">
-          <label for="meseSala" style="font-size:13px">Mese</label>
-          <input type="month" id="meseSala" style="width:auto">
-        </div>
+        <input type="month" id="meseSala" style="display:none">
       </div>
       <p style="color:var(--tenue); font-size:15px; margin:0 0 18px; max-width:60ch">
         Scrivi quante persone ci sono state a ogni giornata e premi Salva.
@@ -934,14 +930,17 @@
   function caricaSala() {
     var box = el('elencoSala');
     box.innerHTML = '<p style="color:var(--tenue)">Un attimo…</p>';
-    chiama({ azione: 'privati', mese: el('meseSala').value })
+    chiama({ azione: 'privati' })
       .then(function (r) {
         if (!r.eventi.length) {
-          box.innerHTML = '<p style="color:var(--tenue); font-size:15px">Nessuna giornata in questo mese.</p>';
+          box.innerHTML = '<p style="color:var(--tenue); font-size:15px">Nessuna giornata.</p>';
           return;
         }
         box.innerHTML = '';
-        r.eventi.slice().sort(function (a, b) { return a.data < b.data ? -1 : 1; }).forEach(function (e) {
+        var ultimoGruppoSala = { v: '' };
+        r.eventi.slice().sort(function (a, b) { return a.data < b.data ? 1 : -1; }).forEach(function (e) {
+          var titoloG = intestazioneGruppo(e.data, ultimoGruppoSala);
+          if (titoloG) box.appendChild(titoloG);
           var riga = document.createElement('div');
           riga.className = 'carta';
           riga.style.cssText = 'display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between; margin-bottom:12px';
@@ -1231,7 +1230,7 @@
   el('mesePrivati').addEventListener('change', function () { caricaPrivati(); });
 
   function caricaPrivati(dopo) {
-    chiama({ azione: 'privati', mese: el('mesePrivati').value })
+    chiama({ azione: 'privati' })
       .then(function (r) {
         eventiPrivati = r.eventi;
         impostazioni = r.impostazioni;
@@ -1241,6 +1240,17 @@
         if (typeof dopo === 'function') dopo();
       })
       .catch(function (err) { avvisa('Non riesco a leggere le giornate: ' + err.message, true); });
+  }
+
+  /** Intestazione "PROSSIME" / "PASSATE" quando l'elenco passa da un gruppo all'altro. */
+  function intestazioneGruppo(data, ultimo) {
+    var g = data >= oggiISO() ? 'PROSSIME' : 'PASSATE';
+    if (g === ultimo.v) return null;
+    ultimo.v = g;
+    var t = document.createElement('div');
+    t.textContent = g;
+    t.style.cssText = 'color:var(--salmone); font-size:12px; font-weight:700; letter-spacing:.12em; margin:16px 0 8px';
+    return t;
   }
 
   var elencoAperte = {};   // giornate dell elenco con le prenotazioni aperte
@@ -1255,12 +1265,15 @@
     n.innerHTML = '';
     if (!eventiPrivati.length) {
       n.innerHTML = '<p style="color:var(--tenue); font-size:14px; margin:0">' +
-        'Nessuna giornata in questo mese. Premi "Nuova giornata" per aggiungerne una.</p>';
+        'Nessuna giornata. Premi "Nuova giornata" per aggiungerne una.</p>';
       return;
     }
 
+    var ultimoGruppo = { v: '' };
     eventiPrivati.forEach(function (e, i) {
       var d = new Date(e.data + 'T12:00:00');
+      var titoloGruppo = intestazioneGruppo(e.data, ultimoGruppo);
+      if (titoloGruppo) n.appendChild(titoloGruppo);
       var riga = document.createElement('div');
       riga.className = 'evento-riga';
       riga.innerHTML =
@@ -1700,7 +1713,7 @@
   /** Rilegge le giornate senza toccare quello che stai scrivendo nei campi. */
   function aggiornaPrenotati() {
     var idCorrente = privatoCorrente ? privatoCorrente.id : '';
-    chiama({ azione: 'privati', mese: el('mesePrivati').value })
+    chiama({ azione: 'privati' })
       .then(function (r) {
         eventiPrivati = r.eventi;
         impostazioni = r.impostazioni;
