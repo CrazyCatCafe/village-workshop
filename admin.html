@@ -717,12 +717,8 @@
     <div data-pagina="prenotati" class="nascosto">
       <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
         <h1>Prenotati</h1>
-        <div style="display:flex; gap:10px; align-items:center">
-          <label for="mesePrenotati" style="font-size:13px">Mese</label>
-          <input type="month" id="mesePrenotati" style="width:auto">
-        </div>
       </div>
-      <p style="color:var(--tenue); font-size:15px; margin:0 0 18px; max-width:60ch">Le giornate con prenotazioni, in ordine di data. Solo lettura.</p>
+      <p style="color:var(--tenue); font-size:15px; margin:0 0 18px; max-width:60ch">Tutte le giornate con prenotazioni, dalla più lontana alla più vicina. Solo lettura.</p>
       <div id="elencoPrenotati"></div>
     </div>
 
@@ -994,7 +990,6 @@
     el('meseAziendali').value = oggiISO().slice(0, 7);
     el('meseResoconto').value = oggiISO().slice(0, 7);
     el('meseSala').value = oggiISO().slice(0, 7);
-    el('mesePrenotati').value = oggiISO().slice(0, 7);
     el('consensiDa').value = oggiISO().slice(0, 8) + '01';
     el('consensiA').value = oggiISO();
   }
@@ -1124,17 +1119,27 @@
   function caricaPrenotati() {
     var box = el('elencoPrenotati');
     box.innerHTML = '<p style="color:var(--tenue)">Un attimo…</p>';
-    chiama({ azione: 'privati', mese: el('mesePrenotati').value })
+    chiama({ azione: 'privati' })
       .then(function (r) {
         var giorni = r.eventi.filter(function (e) { return (e.prenotazioni || []).length; })
           .sort(function (a, b) { return a.data < b.data ? 1 : -1; });
         if (!giorni.length) {
-          box.innerHTML = '<p style="color:var(--tenue); font-size:15px">Nessuna prenotazione in questo mese.</p>';
+          box.innerHTML = '<p style="color:var(--tenue); font-size:15px">Nessuna prenotazione.</p>';
           return;
         }
         box.innerHTML = '';
+        var oggi = oggiISO();
+        var titolo = null;
         giorni.forEach(function (e) {
-          var d = new Date(e.data + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+          var gruppo = e.data >= oggi ? 'PROSSIME' : 'PASSATE';
+          if (gruppo !== titolo) {
+            titolo = gruppo;
+            var t = document.createElement('div');
+            t.textContent = gruppo;
+            t.style.cssText = 'color:var(--salmone, #F2A79F); font-size:12px; font-weight:700; letter-spacing:.12em; margin:18px 0 8px';
+            box.appendChild(t);
+          }
+          var d = new Date(e.data + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: e.data.slice(0, 4) === oggi.slice(0, 4) ? undefined : 'numeric' });
           var c = document.createElement('div');
           c.className = 'carta';
           c.style.cssText = 'margin-bottom:12px; display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; justify-content:space-between';
@@ -1161,7 +1166,6 @@
       })
       .catch(function (err) { box.innerHTML = '<p style="color:var(--tenue)">Non riesco a caricare: ' + escapeHtml(err.message) + '</p>'; });
   }
-  el('mesePrenotati').addEventListener('change', caricaPrenotati);
 
   /* ---------------------------------------------------------- in comune */
 
