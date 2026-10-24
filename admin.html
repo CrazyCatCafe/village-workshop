@@ -307,6 +307,10 @@
 
       <!-- scheda giornata -->
       <div id="schedaPrivato" class="nascosto">
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px">
+          <button type="button" class="azione" id="btnChiudiPrivatoTop">← Giornate private</button>
+          <button type="button" class="azione piena" id="btnSalvaPrivatoTop">Salva la giornata</button>
+        </div>
         <div class="fila" style="align-items:flex-start">
 
           <div style="flex:999 1 420px; min-width:0; display:flex; flex-direction:column; gap:18px">
@@ -401,7 +405,7 @@
 
             <div style="display:flex; gap:10px; flex-wrap:wrap">
               <button type="button" class="azione piena" id="btnSalvaPrivato">Salva la giornata</button>
-              <button type="button" class="azione" id="btnChiudiPrivato">Torna all'elenco</button>
+              <button type="button" class="azione" id="btnChiudiPrivato">← Giornate private</button>
               <button type="button" class="azione nascosto" id="btnEliminaPrivato" style="color:#F2A79F; border-color:rgba(242,167,159,.5)">Elimina</button>
             </div>
           </div>
@@ -1162,6 +1166,8 @@
       .catch(function (err) { avvisa('Non riesco a leggere le giornate: ' + err.message, true); });
   }
 
+  var elencoAperte = {};   // giornate dell elenco con le prenotazioni aperte
+
   function disegnaElencoPrivati() {
     chiudiPassoScheda();
     el('schedaPrivato').classList.add('nascosto');
@@ -1197,9 +1203,32 @@
             '<strong style="font-family:Fraunces,serif; font-size:18px">' + euroTondo(e.conto.spettaCCC) + '</strong></div>' +
           '<div style="text-align:right"><div style="font-size:11px; color:var(--salmone)">MML</div>' +
             '<strong style="font-family:Fraunces,serif; font-size:18px">' + euroTondo(e.conto.spettaMML) + '</strong></div>') +
+          ((e.prenotazioni || []).length
+            ? '<button type="button" class="azione" data-pren-pv="' + i + '" style="min-height:36px; padding:0 12px; font-size:13px">Prenotazioni ' +
+              (elencoAperte[e.id] ? '▾' : '▸') + '</button>' : '') +
           '<button type="button" class="azione" data-apri-pv="' + i + '">Apri</button>' +
         '</div>';
       n.appendChild(riga);
+
+      if (elencoAperte[e.id] && (e.prenotazioni || []).length) {
+        var pannello = document.createElement('div');
+        pannello.style.cssText = 'flex:1 1 100%; background:rgba(251,243,238,.06); border-radius:12px; padding:6px 16px';
+        e.prenotazioni.forEach(function (x) {
+          pannello.appendChild(creaRigaPrenotazione(x, e.data, {
+            elimina: true, prezzoDefault: Number(e.prezzoTesta) || 0,
+            dopo: function () { caricaPrivati(); }
+          }));
+        });
+        riga.appendChild(pannello);
+      }
+    });
+
+    Array.prototype.forEach.call(n.querySelectorAll('[data-pren-pv]'), function (b) {
+      b.addEventListener('click', function () {
+        var ev = eventiPrivati[Number(b.getAttribute('data-pren-pv'))];
+        elencoAperte[ev.id] = !elencoAperte[ev.id];
+        disegnaElencoPrivati();
+      });
     });
 
     Array.prototype.forEach.call(n.querySelectorAll('[data-apri-pv]'), function (b) {
@@ -1248,6 +1277,18 @@
     ricalcolaPrivato();
   }
 
+  /** I pulsanti in alto e in basso nella giornata sono uno lo specchio dell altro. */
+  function testoSalva(t) {
+    el('btnSalvaPrivato').textContent = t;
+    el('btnSalvaPrivatoTop').textContent = t;
+  }
+  function bloccaSalva(si) {
+    el('btnSalvaPrivato').disabled = si;
+    el('btnSalvaPrivatoTop').disabled = si;
+  }
+  el('btnSalvaPrivatoTop').addEventListener('click', function () { el('btnSalvaPrivato').click(); });
+  el('btnChiudiPrivatoTop').addEventListener('click', function () { el('btnChiudiPrivato').click(); });
+
   /**
    * Una giornata nata dalle prenotazioni non si conferma sui numeri provvisori:
    * ospiti e incasso li scrivi tu, e senza non si conferma.
@@ -1258,7 +1299,7 @@
     el('rigaPrezzo').classList.toggle('nascosto', modoConferma);
     el('boxIncasso').classList.toggle('nascosto', modoConferma);
     el('pvProvv').classList.toggle('nascosto', !modoConferma);
-    el('btnSalvaPrivato').textContent = modoConferma ? 'Conferma la giornata' : 'Salva la giornata';
+    testoSalva(modoConferma ? 'Conferma la giornata' : 'Salva la giornata');
     el('pvOspiti').placeholder = '';
     el('pvIncassoTot').placeholder = '';
     if (!modoConferma) return;
@@ -1452,7 +1493,7 @@
       forza = true;
     }
     var b = el('btnSalvaPrivato');
-    b.disabled = true; b.textContent = 'Salvo…';
+    bloccaSalva(true); testoSalva('Salvo…');
     chiama({ azione: 'salvaPrivato', evento: e, forza: forza })
       .then(function (r) {
         avvisa(modoConferma ? 'Giornata confermata.' : 'Giornata salvata.');
@@ -1460,7 +1501,7 @@
         caricaPrivati();
       })
       .catch(function (err) { avvisa('Non salvata: ' + err.message, true); })
-      .finally(function () { b.disabled = false; b.textContent = modoConferma ? 'Conferma la giornata' : 'Salva la giornata'; });
+      .finally(function () { bloccaSalva(false); testoSalva(modoConferma ? 'Conferma la giornata' : 'Salva la giornata'); });
   });
 
   el('btnChiudiPrivato').addEventListener('click', disegnaElencoPrivati);
