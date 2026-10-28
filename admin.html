@@ -328,7 +328,24 @@
                 <h2 style="margin:0">Incasso</h2>
                 <span class="pastiglia" style="background:rgba(169,201,166,.25); color:#C9E0C6">incassa CCC</span>
               </div>
-              <div class="campo" style="margin-bottom:6px"><label for="pvData">Data</label><input type="date" id="pvData" style="width:auto"></div>
+              <div class="campo" id="pvDataNuova" style="margin-bottom:6px"><label for="pvData">Data</label><input type="date" id="pvData" style="width:auto"></div>
+              <div id="pvDataFissa" class="nascosto" style="margin-bottom:12px">
+                <div style="font-size:12px; letter-spacing:.1em; color:var(--tenue)">DATA</div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-top:4px">
+                  <strong id="pvDataTesto" style="font-family:Fraunces,serif; font-size:22px; text-transform:capitalize"></strong>
+                  <button type="button" class="azione" id="btnModificaData" style="min-height:36px; padding:0 14px; font-size:13px">Modifica data</button>
+                </div>
+                <div id="pvSposta" class="nascosto" style="background:rgba(251,243,238,.08); border-radius:12px; padding:14px 16px; margin-top:10px">
+                  <label for="pvNuovaData" style="font-size:13px; display:block; margin-bottom:6px">Nuova data</label>
+                  <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center">
+                    <input type="date" id="pvNuovaData" style="width:auto">
+                    <button type="button" class="azione piena" id="btnSpostaOk">Sposta la giornata</button>
+                    <button type="button" class="azione" id="btnSpostaAnnulla">Annulla</button>
+                  </div>
+                  <p id="pvSpostaInfo" style="font-size:13px; color:var(--tenue); margin:10px 0 0; line-height:1.5"></p>
+                  <button type="button" class="azione nascosto" id="btnSpostaApri" style="min-height:34px; padding:0 12px; font-size:13px; margin-top:8px">Apri quella esistente</button>
+                </div>
+              </div>
               <div id="pvDoppia" class="nascosto" style="background:rgba(242,167,159,.18); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:14px; line-height:1.5">
                 <span id="pvDoppiaTesto"></span>
                 <button type="button" class="azione" id="btnApriDoppia" style="min-height:34px; padding:0 12px; font-size:13px; margin-top:8px">Apri quella esistente</button>
@@ -1377,6 +1394,11 @@
     });
     el('btnEliminaPrivato').classList.toggle('nascosto', !e.id);
     el('titoloPrivati').textContent = e.id ? 'Giornata' : 'Nuova giornata';
+    // giornata gia esistente: la data si cambia con "Modifica data", che sposta con lei anche le prenotazioni
+    el('pvDataNuova').classList.toggle('nascosto', !!e.id);
+    el('pvDataFissa').classList.toggle('nascosto', !e.id);
+    el('pvDataTesto').textContent = e.id ? dataLunga(e.data) : '';
+    el('pvSposta').classList.add('nascosto');
     var importoPers = Math.round((Number(e.personale) || 0) * (Number(e.orePersonale) || 0) * (Number(e.costoPersonaleOra) || 0) * 100) / 100;
     el('pvPersonaleTot').value = importoPers;
     // segue la fascia finche non lo cambi tu; se arriva da una giornata con un altro importo, resta com e
@@ -1638,6 +1660,73 @@
   }
   el('pvData').addEventListener('change', controllaDoppia);
   el('pvData').addEventListener('input', controllaDoppia);
+
+  /* ------------------------------------------------ modifica data di una giornata */
+
+  function altraGiornataIl(data) {
+    var mio = privatoCorrente ? privatoCorrente.id : '';
+    return dateGiornate.filter(function (d) { return d.data === data && d.id !== mio; })[0] || null;
+  }
+
+  function controllaSposta() {
+    var v = el('pvNuovaData').value;
+    var altra = v ? altraGiornataIl(v) : null;
+    var n = privatoCorrente && privatoCorrente.prenotazioni ? privatoCorrente.prenotazioni.length : 0;
+    el('btnSpostaApri').classList.toggle('nascosto', !altra);
+    el('btnSpostaOk').disabled = !!altra || !v;
+    el('pvSpostaInfo').textContent = altra
+      ? 'Per ' + dataLunga(v) + ' esiste già una giornata: non posso spostare questa lì.'
+      : (n ? 'Le ' + n + (n === 1 ? ' prenotazione va' : ' prenotazioni vanno') + ' con la giornata, con i loro orari.' : 'Nessuna prenotazione da spostare.') +
+        (privatoCorrente && !privatoCorrente.daSalvare ? ' Giornata già confermata: incassi e costi restano uguali.' : '');
+  }
+
+  el('btnModificaData').addEventListener('click', function () {
+    var aperto = !el('pvSposta').classList.contains('nascosto');
+    el('pvSposta').classList.toggle('nascosto', aperto);
+    if (!aperto) { el('pvNuovaData').value = privatoCorrente.data; controllaSposta(); }
+  });
+  el('btnSpostaAnnulla').addEventListener('click', function () { el('pvSposta').classList.add('nascosto'); });
+  el('pvNuovaData').addEventListener('change', controllaSposta);
+  el('pvNuovaData').addEventListener('input', controllaSposta);
+
+  el('btnSpostaApri').addEventListener('click', function () {
+    var d = altraGiornataIl(el('pvNuovaData').value);
+    if (!d) return;
+    var trova = function () {
+      var ev = eventiPrivati.filter(function (x) { return x.id === d.id; })[0];
+      if (ev) apriPrivato(ev);
+    };
+    if (eventiPrivati.some(function (x) { return x.id === d.id; })) { trova(); return; }
+    caricaPrivati(trova);
+  });
+
+  el('btnSpostaOk').addEventListener('click', function () {
+    var e = privatoCorrente, v = el('pvNuovaData').value;
+    if (!e || !e.id || !v) return;
+    if (v === e.data) { el('pvSposta').classList.add('nascosto'); return; }
+    if (altraGiornataIl(v)) { controllaSposta(); return; }
+    var n = (e.prenotazioni || []).length;
+    var mese = function (iso) { return new Date(iso + 'T12:00:00').toLocaleDateString('it-IT', { month: 'long', year: 'numeric' }); };
+    var testo = 'Sposto la giornata di ' + dataLunga(e.data) + ' a ' + dataLunga(v) + '?' +
+      (n ? ' ' + (n === 1 ? 'La prenotazione va' : 'Le ' + n + ' prenotazioni vanno') + ' con lei.' : '') +
+      (!e.daSalvare && e.data.slice(0, 7) !== v.slice(0, 7)
+        ? '\nÈ già confermata: esce dal resoconto di ' + mese(e.data) + ' ed entra in quello di ' + mese(v) + '.' : '');
+    if (!window.confirm(testo)) return;
+    var b = el('btnSpostaOk');
+    b.disabled = true; b.textContent = 'Sposto…';
+    chiama({ azione: 'spostaGiornata', id: e.id, data: v })
+      .then(function (r) {
+        e.data = r.data;
+        el('pvData').value = r.data;
+        el('pvDataTesto').textContent = dataLunga(r.data);
+        el('pvSposta').classList.add('nascosto');
+        dateGiornate.forEach(function (d) { if (d.id === e.id) d.data = r.data; });
+        avvisa('Giornata spostata al ' + dataLunga(r.data) + '.');
+        aggiornaPrenotati();
+      })
+      .catch(function (err) { avvisa('Non spostata: ' + err.message, true); })
+      .finally(function () { b.disabled = false; b.textContent = 'Sposta la giornata'; });
+  });
 
   el('btnApriDoppia').addEventListener('click', function () {
     var d = giornataStessoGiorno(el('pvData').value);
