@@ -1610,6 +1610,8 @@
     var e = leggiFormPrivato();
     if (!e.data) { avvisa('Serve la data.', true); return; }
     if (modoConferma) {
+      var oggiLocale = new Date(); oggiLocale = oggiLocale.getFullYear() + '-' + String(oggiLocale.getMonth() + 1).padStart(2, '0') + '-' + String(oggiLocale.getDate()).padStart(2, '0');
+      if (e.data > oggiLocale) { avvisa('Puoi confermare la giornata solo dal giorno stesso in poi.', true); return; }
       if (!e.confermato) {
         avvisa('Per confermare scrivi il numero definitivo di ospiti e l’incasso totale.', true);
         el(el('pvOspiti').value.trim() === '' ? 'pvOspiti' : 'pvIncassoTot').focus();
