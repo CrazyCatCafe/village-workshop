@@ -290,9 +290,15 @@
     <!-- PRIVATI ------------------------------------------------------- -->
     <div data-pagina="privati">
       <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px">
-        <h1 id="titoloPrivati">Eventi privati</h1>
+        <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap">
+          <h1 id="titoloPrivati" style="margin:0">Eventi privati</h1>
+          <div id="selettoreMesePrivati" style="display:flex; align-items:center; gap:6px; background:rgba(251,243,238,.1); border-radius:99px; padding:5px">
+            <button type="button" class="azione" id="mesePrivatiPrec" aria-label="Mese precedente" style="min-height:36px; padding:0 14px">‹</button>
+            <input type="month" id="mesePrivati" style="width:auto; font-weight:700; font-size:16px">
+            <button type="button" class="azione" id="mesePrivatiSucc" aria-label="Mese successivo" style="min-height:36px; padding:0 14px">›</button>
+          </div>
+        </div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
-          <input type="month" id="mesePrivati" style="display:none">
           <button type="button" class="azione piena" id="btnNuovoPrivato">Nuova giornata</button>
         </div>
       </div>
@@ -633,7 +639,7 @@
       <div class="carta" style="margin-bottom:18px">
         <h2 style="margin:0 0 14px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Clienti</h2>
         <div class="fila" style="margin-bottom:14px">
-          <div class="tessera buona" style="flex:1 1 200px"><div class="eticchetta">Clienti paganti</div><div class="cifra" id="rsClPaganti">0</div></div>
+          <div class="tessera buona" style="flex:1 1 200px"><div class="eticchetta">Clienti paganti</div><div class="cifra" id="rsClPaganti">0</div><div id="rsClProv" style="font-size:12px; margin-top:2px"></div></div>
           <div class="tessera" style="flex:1 1 200px; background:var(--legno)"><div class="eticchetta">Freelab gratis</div><div class="cifra" id="rsClGratis">0</div></div>
           <div class="tessera spicca" style="flex:1 1 200px"><div class="eticchetta">Freelab solo cottura</div><div class="cifra" id="rsClCottura">0</div></div>
         </div>
@@ -1306,12 +1312,23 @@
   };
   var TESTO_PV = ['data', 'note'];
 
-  el('mesePrivati').addEventListener('change', function () { caricaPrivati(); });
+  el('mesePrivati').addEventListener('change', function () { eventiPrivati = []; disegnaElencoPrivati(); caricaPrivati(); });
+  function spostaMesePrivati(delta) {
+    var v = el('mesePrivati').value || oggiISO().slice(0, 7);
+    var d = new Date(v + '-01T12:00:00');
+    d.setMonth(d.getMonth() + delta);
+    el('mesePrivati').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    eventiPrivati = [];
+    disegnaElencoPrivati();
+    caricaPrivati();
+  }
+  el('mesePrivatiPrec').addEventListener('click', function () { spostaMesePrivati(-1); });
+  el('mesePrivatiSucc').addEventListener('click', function () { spostaMesePrivati(1); });
 
   function caricaPrivati(dopo) {
     // riapro subito l'elenco che ho gia; la versione fresca arriva dopo
     if (!dopo && eventiPrivati && eventiPrivati.length) disegnaElencoPrivati();
-    chiama({ azione: 'privati' })
+    chiama({ azione: 'privati', mese: el('mesePrivati').value || oggiISO().slice(0, 7) })
       .then(function (r) {
         eventiPrivati = r.eventi;
         impostazioni = r.impostazioni;
@@ -1338,18 +1355,19 @@
   function disegnaContatoreMese() {
     var box = el('contatoreMese');
     if (ruolo !== 'admin') { box.classList.add('nascosto'); return; }
-    var mese = oggiISO().slice(0, 7), p = 0, g = 0, k = 0;
+    var mese = el('mesePrivati').value || oggiISO().slice(0, 7), p = 0, g = 0, k = 0, prov = 0;
     eventiPrivati.forEach(function (e) {
-      if (e.data.slice(0, 7) !== mese || e.daSalvare) return;
+      if (e.data.slice(0, 7) !== mese) return;
+      if (e.daSalvare) { prov += Number(e.prenotati) || 0; return; }
       p += Number(e.ospiti) || 0; g += Number(e.freelabGratis) || 0; k += Number(e.freelabCottura) || 0;
     });
     var nomeMese = new Date(mese + '-01T12:00:00').toLocaleDateString('it-IT', { month: 'long' });
-    var tessera = function (et, n, col) {
+    var tessera = function (et, n, col, sub) {
       return '<div style="flex:1 1 150px; background:' + col + '; color:#4A1129; border-radius:14px; padding:10px 14px">' +
         '<div style="font-size:12px; font-weight:600">' + et + '</div>' +
-        '<div style="font-family:Fraunces,serif; font-size:28px; font-weight:700">' + n + '</div></div>';
+        '<div style="font-family:Fraunces,serif; font-size:28px; font-weight:700">' + n + '</div>' + (sub || '') + '</div>';
     };
-    box.innerHTML = tessera('Paganti · ' + nomeMese, p, '#A9C9A6') + tessera('Freelab gratis', g, '#E3B88A') +
+    box.innerHTML = tessera('Paganti · ' + nomeMese, p, '#A9C9A6', prov ? '<div style="font-size:12px">+ ' + prov + ' prenotati da confermare</div>' : '') + tessera('Freelab gratis', g, '#E3B88A') +
       tessera('Freelab solo cottura', k, '#F2A79F');
     box.classList.remove('nascosto');
   }
@@ -1367,7 +1385,7 @@
     n.innerHTML = '';
     if (!eventiPrivati.length) {
       n.innerHTML = '<p style="color:var(--tenue); font-size:14px; margin:0">' +
-        'Nessuna giornata. Premi "Nuova giornata" per aggiungerne una.</p>';
+        'Nessuna giornata in questo mese. Premi "Nuova giornata" per aggiungerne una.</p>';
       return;
     }
 
@@ -1386,8 +1404,10 @@
             (e.daSalvare
               ? e.prenotati + ' prenotati · ' + euroTondo(e.incassoProvvisorio) + ' provvisori ' +
                 '<span class="pastiglia" style="background:rgba(227,184,138,.25); color:var(--legno-chiaro)">da confermare</span>'
-              : e.ospiti + ' ospiti · ' + euroTondo(e.conto.incasso) + ' incassati' +
-                (e.prenotati ? ' · ' + e.prenotati + ' prenotati' : '')) +
+              : e.ospiti + ' paganti' +
+                (e.freelabGratis ? ' · ' + e.freelabGratis + ' Freelab gratis' : '') +
+                (e.freelabCottura ? ' · ' + e.freelabCottura + ' Freelab cottura' : '') +
+                ' · ' + euroTondo(e.conto.incasso) + ' incassati') +
           '</div>' +
         '</div>' +
         '<div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap">' +
@@ -1889,7 +1909,7 @@
   /** Rilegge le giornate senza toccare quello che stai scrivendo nei campi. */
   function aggiornaPrenotati() {
     var idCorrente = privatoCorrente ? privatoCorrente.id : '';
-    chiama({ azione: 'privati' })
+    chiama({ azione: 'privati', mese: el('mesePrivati').value || oggiISO().slice(0, 7) })
       .then(function (r) {
         eventiPrivati = r.eventi;
         impostazioni = r.impostazioni;
@@ -2470,6 +2490,7 @@
     // --- clienti
     var cl = r.clienti || { paganti: 0, freelabGratis: 0, freelabCottura: 0, formule: [] };
     el('rsClPaganti').textContent = cl.paganti;
+    el('rsClProv').textContent = cl.daConfermare ? '+ ' + cl.daConfermare + ' prenotati da confermare' : '';
     el('rsClGratis').textContent = cl.freelabGratis;
     el('rsClCottura').textContent = cl.freelabCottura;
     el('rsClFormule').innerHTML = cl.formule.length
@@ -3013,7 +3034,7 @@
       head: [['Clienti', 'Numero']],
       body: cl.formule.map(function (f) { return ['Paganti \u00b7 ' + f.nome, f.clienti]; })
         .concat([['Freelab gratis', cl.freelabGratis], ['Freelab solo cottura', cl.freelabCottura]]),
-      foot: [['Totale paganti', cl.paganti]],
+      foot: [['Totale paganti', cl.paganti]].concat(cl.daConfermare ? [['Prenotati da confermare (non compresi)', cl.daConfermare]] : []),
       columnStyles: { 1: { halign: 'right', cellWidth: 36 } }
     }));
     finita();
