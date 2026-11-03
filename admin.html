@@ -613,8 +613,8 @@
       </div>
 
       <div class="fila" style="margin-bottom:22px">
-        <div class="tessera buona" style="flex:1 1 240px"><div class="eticchetta">Spetta a CCC</div><div class="cifra" id="rsCcc">€ 0</div></div>
-        <div class="tessera spicca" style="flex:1 1 240px"><div class="eticchetta">Spetta a MML</div><div class="cifra" id="rsMml">€ 0</div></div>
+        <div class="tessera buona" style="flex:1 1 240px"><div class="eticchetta">Quota CCC</div><div class="cifra" id="rsCcc">€ 0</div></div>
+        <div class="tessera spicca" style="flex:1 1 240px"><div class="eticchetta">Quota MML</div><div class="cifra" id="rsMml">€ 0</div></div>
         <div class="tessera" style="flex:1 1 240px; background:var(--legno)"><div class="eticchetta" id="rsVersoEt">Saldo</div><div class="cifra" id="rsSaldo">€ 0</div></div>
       </div>
 
@@ -622,7 +622,7 @@
       <div class="carta" style="margin-bottom:18px">
         <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between">
           <div style="min-width:0">
-            <h2 style="margin:0 0 4px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Eventi aziendali</h2>
+            <h2 style="margin:0 0 4px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Eventi aziendali e cottura 10 €</h2>
             <div style="font-size:13px; color:var(--tenue)" id="rsAzSommario">—</div>
           </div>
           <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap">
@@ -667,7 +667,7 @@
       <!-- costi del mese -->
       <div class="carta" style="margin-bottom:18px">
         <h2 style="margin-bottom:6px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Costi del mese</h2>
-        <p style="margin:0 0 20px; font-size:14px; color:var(--tenue)">Quelli che non appartengono a una giornata sola. Si dividono a metà, e chi li ha pagati si riprende la metà dell'altro.</p>
+        <p style="margin:0 0 20px; font-size:14px; color:var(--tenue)">Si calcolano le spese di ognuno e si divide il guadagno. Materia prima e personale vengono dalle giornate degli eventi privati: qui li vedi sommati.</p>
 
         <div class="fila">
           <div class="riquadro-costo">
@@ -709,6 +709,21 @@
               <input type="text" id="rsGestione" inputmode="decimal" style="width:118px">
             </div>
             <div style="font-size:12px; color:var(--tenue); line-height:1.5">metti 0 se non è più dovuta</div>
+          </div>
+        </div>
+
+        <div class="fila" style="margin-top:14px">
+          <div class="riquadro-costo">
+            <div class="testa-costo"><h3>Materia prima</h3></div>
+            <div class="riga-totale"><span>CCC · cibo</span><strong id="rsMatCcc">€ 0</strong></div>
+            <div class="riga-totale"><span>MML · materiale</span><strong id="rsMatMml">€ 0</strong></div>
+            <div style="font-size:12px; color:var(--tenue); margin-top:6px">dalle giornate, già nei loro conti</div>
+          </div>
+          <div class="riquadro-costo">
+            <div class="testa-costo"><h3>Personale</h3></div>
+            <div class="riga-totale"><span>CCC · sala</span><strong id="rsPersCcc">€ 0</strong></div>
+            <div class="riga-totale"><span>MML · insegnanti</span><strong id="rsPersMml">€ 0</strong></div>
+            <div style="font-size:12px; color:var(--tenue); margin-top:6px">dalle giornate, già nei loro conti</div>
           </div>
         </div>
 
@@ -1565,8 +1580,8 @@
           '<div style="font-family:Fraunces,serif; font-size:22px; font-weight:800">' + euroTondo(c.meta) + '</div></div>' +
       '</div>';
 
-    el('pvBoxCcc').innerHTML = boxPrivato(c.costiCCC, c.meta, c.spettaCCC, 'SPETTA A CCC', 'var(--salvia)');
-    el('pvBoxMml').innerHTML = boxPrivato(c.costiMML, c.meta, c.spettaMML, 'SPETTA A MML', 'var(--salmone)');
+    el('pvBoxCcc').innerHTML = boxPrivato(c.costiCCC, c.meta, c.spettaCCC, 'QUOTA CCC', 'var(--salvia)');
+    el('pvBoxMml').innerHTML = boxPrivato(c.costiMML, c.meta, c.spettaMML, 'QUOTA MML', 'var(--salmone)');
 
     el('pvPerche').innerHTML = perchePrivato(c);
   }
@@ -2250,8 +2265,8 @@
         : '+' + ivaDi('MML') + '% → ' + euro(lordoDi(Number(x.importo) || 0, 'MML'));
     });
 
-    el('azBoxCcc').innerHTML = boxQuote(c, 'quotaCCC', 'SPETTA A CCC', c.spettaCCC, 'var(--salvia)');
-    el('azBoxMml').innerHTML = boxQuote(c, 'quotaMML', 'SPETTA A MML', c.spettaMML, 'var(--salmone)');
+    el('azBoxCcc').innerHTML = boxQuote(c, 'quotaCCC', 'QUOTA CCC', c.spettaCCC, 'var(--salvia)');
+    el('azBoxMml').innerHTML = boxQuote(c, 'quotaMML', 'QUOTA MML', c.spettaMML, 'var(--salmone)');
     el('azPerche').innerHTML = perche(c);
   }
 
@@ -2295,7 +2310,7 @@
       } else {
         fondo = 'rgba(242,167,159,.14)'; versoEt = 'CCC → MML'; colore = 'var(--salmone)';
         spiega = r.diChi === 'diviso'
-          ? "L'avete incassata voi ma è divisa: metà spetta a MML."
+          ? "L'avete incassata voi ma è divisa: metà è di MML."
           : "L'avete incassata voi ma è di MML.";
         pezzi.push('− ' + euro(importo));
       }
@@ -2408,9 +2423,9 @@
 
     // --- aziendali
     var a = r.aziendaliTotali;
-    el('rsAzSommario').textContent = a.conta
+    el('rsAzSommario').textContent = 'Incassa MML · ' + (a.conta
       ? a.conta + (a.conta === 1 ? ' evento · ' : ' eventi · ') + euro(a.totale) + ' in tutto'
-      : 'Nessun evento';
+      : 'nessun evento');
     el('rsAzCcc').textContent = euroTondo(a.spettaCCC);
     el('rsAzMml').textContent = euroTondo(a.spettaMML);
 
@@ -2449,10 +2464,10 @@
 
     // --- privati
     var p = r.privatiTotali;
-    el('rsPvSommario').textContent = p.conta
+    el('rsPvSommario').textContent = 'Incassa CCC · ' + (p.conta
       ? p.conta + (p.conta === 1 ? ' giornata · ' : ' giornate · ') + p.ospiti +
         ' ospiti · ' + euro(p.incasso) + ' incassati'
-      : 'Nessuna giornata';
+      : 'nessuna giornata');
     el('rsPvCcc').textContent = euroTondo(p.spettaCCC);
     el('rsPvMml').textContent = euroTondo(p.spettaMML);
 
@@ -2504,6 +2519,12 @@
     el('rsGestione').value = trovaCosto('Gestione del format').importo;
 
     Object.keys(CAMPI_PAGA).forEach(disegnaPastiglia);
+
+    var pt0 = r.privatiTotali;
+    el('rsMatCcc').textContent = euro(pt0.food || 0);
+    el('rsMatMml').textContent = euro(pt0.materiale || 0);
+    el('rsPersCcc').textContent = euro(pt0.personale || 0);
+    el('rsPersMml').textContent = euro(pt0.docenza || 0);
 
     ricalcolaCostiMese();
   }
@@ -2581,12 +2602,12 @@
       rigaD('meno costi CCC', c.costiCCC) +
       rigaD('Utile', c.utile, 'metà a testa: ' + euro(c.meta), true) + '</div>' +
 
-      '<div class="blocco ccc"><h4>Spetta a CCC</h4>' +
+      '<div class="blocco ccc"><h4>Quota CCC</h4>' +
       rigaD('I suoi costi, indietro', c.costiCCC) +
       rigaD('Metà utile', c.meta) +
       rigaD('Totale', c.spettaCCC, '', true) + '</div>' +
 
-      '<div class="blocco mml"><h4>Spetta a MML</h4>' +
+      '<div class="blocco mml"><h4>Quota MML</h4>' +
       rigaD('I suoi costi, indietro', c.costiMML) +
       rigaD('Metà utile', c.meta) +
       rigaD('Totale', c.spettaMML, '', true) + '</div>' +
@@ -2621,8 +2642,8 @@
     if (Math.round(c.saldo * 100) === 0) {
       chiusa = 'Tra CCC e MML non c’è niente da regolare.';
     } else {
-      chiusa = 'CCC ha incassato ' + euro(c.inManoCCC) + ', MML ' + euro(c.inManoMML) + '. A CCC ne spettano ' +
-        euro(c.spettaCCC) + ', a MML ' + euro(c.spettaMML) + ', quindi <strong>' +
+      chiusa = 'CCC ha incassato ' + euro(c.inManoCCC) + ', MML ' + euro(c.inManoMML) + '. La quota di CCC è ' +
+        euro(c.spettaCCC) + ', quella di MML ' + euro(c.spettaMML) + ', quindi <strong>' +
         (c.saldo > 0 ? 'MML deve a CCC' : 'CCC deve a MML') + '</strong>.';
     }
     return '<div class="dett">' +
@@ -2889,8 +2910,8 @@
     var mml = r.aziendaliTotali.spettaMML + r.privatiTotali.spettaMML - costi.totale / 2;
     var saldo = r.aziendaliTotali.saldo + r.privatiTotali.saldo + costi.saldo;
     var tessere = [
-      ['Spetta a CCC', eur2(ccc)],
-      ['Spetta a MML', eur2(mml)],
+      ['Quota CCC', eur2(ccc)],
+      ['Quota MML', eur2(mml)],
       [saldo >= 0 ? 'MML deve a CCC' : 'CCC deve a MML', eur2(Math.abs(saldo))]
     ];
     var tw = (W - 8) / 3;
@@ -2928,42 +2949,51 @@
 
     var at = r.aziendaliTotali, pt = r.privatiTotali;
 
-    // --- chi deve a chi
-    if (y > 235) { doc.addPage(); y = 16; }
-    titolo('Chi deve a chi, e perché');
-    var righe = [
-      ['Eventi aziendali', 'Li fattura MML, e la parte di CCC ce l\'ha lui.', at.saldo],
-      ['Eventi privati', 'Incassa CCC: deve a MML i suoi costi (' + eur2(pt.costiMML) + ') più metà utile (' + eur2(pt.utile / 2) + ').', pt.saldo],
-      ['Costi del mese', 'Metà per uno: chi ha pagato si riprende la metà dell\'altro.', costi.saldo]
-    ];
+    // --- riepilogo: chi incassa e quanto
+    var costiCCC = costi.righe.filter(function (x) { return x.paga === 'CCC'; });
+    var costiMML = costi.righe.filter(function (x) { return x.paga !== 'CCC'; });
+    var vociCCC = costiCCC.map(function (x) { return [x.etichetta, x.importo]; })
+      .concat([['Materia prima (cibo)', pt.food || 0], ['Personale (sala)', pt.personale || 0]]);
+    var vociMML = costiMML.map(function (x) { return [x.etichetta, x.importo]; })
+      .concat([['Materia prima (materiale)', pt.materiale || 0], ['Personale (insegnanti)', pt.docenza || 0]]);
+    var somma2 = function (l) { return l.reduce(function (s, x) { return s + x[1]; }, 0); };
+    var totCCC = somma2(vociCCC), totMML = somma2(vociMML);
+
+    if (y > 215) { doc.addPage(); y = 16; }
     doc.autoTable(Object.assign({}, stile, {
       startY: y,
-      head: [['Voce', 'Motivo', 'Verso']],
-      body: righe.map(function (x) { return [x[0], x[1], versoTesto(x[2])]; }),
-      foot: [['Alla fine', '', versoTesto(saldo)]],
-      columnStyles: { 0: { cellWidth: 36 }, 2: { cellWidth: 52, fontStyle: 'bold' } }
+      head: [['Voce', 'Chi incassa', 'Importo']],
+      body: [
+        ['Eventi aziendali e cottura 10 \u20ac', 'MML', eur2(at.totale)],
+        ['Eventi privati', 'CCC', eur2(pt.incasso)],
+        ['Costi del mese (CCC e MML insieme)', '-', eur2(totCCC + totMML)]
+      ],
+      foot: [['Totale incassato', '', eur2(at.totale + pt.incasso)]],
+      columnStyles: { 1: { cellWidth: 34 }, 2: { halign: 'right', cellWidth: 36 } }
     }));
     finita();
 
-    // --- costi del mese
-    titolo('Costi del mese', 'divisi a metà; chi li ha pagati si riprende la metà dell\'altro');
-    doc.autoTable(Object.assign({}, stile, {
-      startY: y,
-      head: [['Voce', 'Importo', 'Paga', 'Metà a testa', 'Credito di chi paga']],
-      body: costi.righe.map(function (x) {
-        return [x.etichetta, eur2(x.importo), x.paga, eur2(x.importo / 2), eur2(Math.abs(x.credito)) + ' a ' + x.paga];
-      }),
-      foot: [['Totale', eur2(costi.totale), '', eur2(costi.totale / 2), versoTesto(costi.saldo)]],
-      columnStyles: { 1: { halign: 'right' }, 3: { halign: 'right' } }
-    }));
-    finita();
+    // --- costi di CCC e di MML
+    var tabellaCosti = function (nome, voci, tot) {
+      titolo('Costi del mese ' + nome);
+      doc.autoTable(Object.assign({}, stile, {
+        startY: y,
+        head: [['Voce', 'Importo']],
+        body: voci.map(function (x) { return [x[0], eur2(x[1])]; }),
+        foot: [['Totale costi ' + nome, eur2(tot)]],
+        columnStyles: { 1: { halign: 'right', cellWidth: 36 } }
+      }));
+      finita();
+    };
+    tabellaCosti('CCC', vociCCC, totCCC);
+    tabellaCosti('MML', vociMML, totMML);
 
     // --- privati
-    titolo('Dettaglio eventi privati', pt.conta + (pt.conta === 1 ? ' giornata' : ' giornate') + ' · ' + pt.ospiti + ' ospiti');
+    titolo('Dettaglio eventi privati', 'Incassa CCC \u00b7 ' + pt.conta + (pt.conta === 1 ? ' giornata' : ' giornate') + ' · ' + pt.ospiti + ' ospiti');
     if (r.privati.length) {
       doc.autoTable(Object.assign({}, stile, {
         startY: y,
-        head: [['Data', 'Ospiti', 'Incasso', 'Costi MML', 'Costi CCC', 'Utile', 'Spetta CCC', 'Spetta MML']],
+        head: [['Data', 'Ospiti', 'Incasso', 'Costi MML', 'Costi CCC', 'Utile', 'Quota CCC', 'Quota MML']],
         body: r.privati.map(function (e) {
           return [dataIt(e.data), e.ospiti, eur2(e.conto.incasso), eur2(e.conto.costiMML),
                   eur2(e.conto.costiCCC), eur2(e.conto.utile), eur2(e.conto.spettaCCC), eur2(e.conto.spettaMML)];
@@ -2981,11 +3011,11 @@
     }
 
     // --- aziendali
-    titolo('Dettaglio eventi aziendali', at.conta + (at.conta === 1 ? ' evento' : ' eventi'));
+    titolo('Dettaglio eventi aziendali e cottura 10 \u20ac', 'Incassa MML \u00b7 ' + at.conta + (at.conta === 1 ? ' evento' : ' eventi'));
     if (r.aziendali.length) {
       doc.autoTable(Object.assign({}, stile, {
         startY: y,
-        head: [['Data', 'Azienda', 'Persone', 'Totale', 'Spetta CCC', 'Spetta MML', 'Saldo']],
+        head: [['Data', 'Azienda', 'Persone', 'Totale', 'Quota CCC', 'Quota MML', 'Saldo']],
         body: r.aziendali.map(function (e) {
           return [dataIt(e.data), e.azienda || '-', e.persone, eur2(e.conto.totale),
                   eur2(e.conto.spettaCCC), eur2(e.conto.spettaMML), versoTesto(e.conto.saldo)];
