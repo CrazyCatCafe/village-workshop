@@ -299,6 +299,7 @@
 
       <!-- elenco -->
       <div id="elencoPrivati">
+        <div id="contatoreMese" class="nascosto" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px"></div>
         <div class="carta">
           <h2>Giornate del mese</h2>
           <div id="righePrivati"></div>
@@ -351,8 +352,18 @@
                 <button type="button" class="azione" id="btnApriDoppia" style="min-height:34px; padding:0 12px; font-size:13px; margin-top:8px">Apri quella esistente</button>
               </div>
               <div class="campo" style="margin-bottom:4px">
-                <label for="pvOspiti">Ospiti</label>
+                <label for="pvOspiti">Ospiti paganti</label>
                 <input type="text" id="pvOspiti" inputmode="numeric" style="width:90px">
+              </div>
+              <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:8px">
+                <div class="campo" style="margin-bottom:4px">
+                  <label for="pvFreelabGratis">Freelab gratis</label>
+                  <input type="text" id="pvFreelabGratis" inputmode="numeric" style="width:90px" placeholder="0">
+                </div>
+                <div class="campo" style="margin-bottom:4px">
+                  <label for="pvFreelabCottura">Freelab solo cottura</label>
+                  <input type="text" id="pvFreelabCottura" inputmode="numeric" style="width:90px" placeholder="0">
+                </div>
               </div>
               <div id="pvSuggerimentoPren" class="nascosto" style="text-align:right; margin-bottom:8px">
                 <button type="button" id="btnUsaPrenotati" class="azione"
@@ -616,6 +627,19 @@
         <div class="tessera buona" style="flex:1 1 240px"><div class="eticchetta">Quota CCC</div><div class="cifra" id="rsCcc">€ 0</div></div>
         <div class="tessera spicca" style="flex:1 1 240px"><div class="eticchetta">Quota MML</div><div class="cifra" id="rsMml">€ 0</div></div>
         <div class="tessera" style="flex:1 1 240px; background:var(--legno)"><div class="eticchetta" id="rsVersoEt">Saldo</div><div class="cifra" id="rsSaldo">€ 0</div></div>
+      </div>
+
+      <!-- clienti -->
+      <div class="carta" style="margin-bottom:18px">
+        <h2 style="margin:0 0 14px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Clienti</h2>
+        <div class="fila" style="margin-bottom:14px">
+          <div class="tessera buona" style="flex:1 1 200px"><div class="eticchetta">Clienti paganti</div><div class="cifra" id="rsClPaganti">0</div></div>
+          <div class="tessera" style="flex:1 1 200px; background:var(--legno)"><div class="eticchetta">Freelab gratis</div><div class="cifra" id="rsClGratis">0</div></div>
+          <div class="tessera spicca" style="flex:1 1 200px"><div class="eticchetta">Freelab solo cottura</div><div class="cifra" id="rsClCottura">0</div></div>
+        </div>
+        <div class="scorri" style="background:rgba(251,243,238,.05); border-radius:14px; padding:6px 4px">
+          <table><thead><tr><th>Paganti per formula</th><th>Clienti</th></tr></thead><tbody id="rsClFormule"></tbody></table>
+        </div>
       </div>
 
       <!-- aziendali, richiudibile -->
@@ -1277,6 +1301,7 @@
     pvMateriale: 'materialePersona', pvInsegnanti: 'insegnanti',
     pvOreInsegnante: 'oreInsegnante', pvCostoInsegnante: 'costoInsegnanteOra',
     pvFood: 'foodPersona',
+    pvFreelabGratis: 'freelabGratis', pvFreelabCottura: 'freelabCottura',
     pvNote: 'note'
   };
   var TESTO_PV = ['data', 'note'];
@@ -1309,6 +1334,26 @@
     return t;
   }
 
+  /** Contatore del mese in corso: clienti paganti e Freelab, solo dalle giornate confermate. */
+  function disegnaContatoreMese() {
+    var box = el('contatoreMese');
+    if (ruolo !== 'admin') { box.classList.add('nascosto'); return; }
+    var mese = oggiISO().slice(0, 7), p = 0, g = 0, k = 0;
+    eventiPrivati.forEach(function (e) {
+      if (e.data.slice(0, 7) !== mese || e.daSalvare) return;
+      p += Number(e.ospiti) || 0; g += Number(e.freelabGratis) || 0; k += Number(e.freelabCottura) || 0;
+    });
+    var nomeMese = new Date(mese + '-01T12:00:00').toLocaleDateString('it-IT', { month: 'long' });
+    var tessera = function (et, n, col) {
+      return '<div style="flex:1 1 150px; background:' + col + '; color:#4A1129; border-radius:14px; padding:10px 14px">' +
+        '<div style="font-size:12px; font-weight:600">' + et + '</div>' +
+        '<div style="font-family:Fraunces,serif; font-size:28px; font-weight:700">' + n + '</div></div>';
+    };
+    box.innerHTML = tessera('Paganti · ' + nomeMese, p, '#A9C9A6') + tessera('Freelab gratis', g, '#E3B88A') +
+      tessera('Freelab solo cottura', k, '#F2A79F');
+    box.classList.remove('nascosto');
+  }
+
   var elencoAperte = {};   // giornate dell elenco con le prenotazioni aperte
 
   function disegnaElencoPrivati() {
@@ -1317,6 +1362,7 @@
     el('elencoPrivati').classList.remove('nascosto');
     el('titoloPrivati').textContent = 'Eventi privati';
 
+    disegnaContatoreMese();
     var n = el('righePrivati');
     n.innerHTML = '';
     if (!eventiPrivati.length) {
@@ -2421,6 +2467,16 @@
     el('rsVersoEt').textContent = r.totali.saldo >= 0 ? 'MML deve a CCC' : 'CCC deve a MML';
     el('rsSaldo').textContent = euroTondo(Math.abs(r.totali.saldo));
 
+    // --- clienti
+    var cl = r.clienti || { paganti: 0, freelabGratis: 0, freelabCottura: 0, formule: [] };
+    el('rsClPaganti').textContent = cl.paganti;
+    el('rsClGratis').textContent = cl.freelabGratis;
+    el('rsClCottura').textContent = cl.freelabCottura;
+    el('rsClFormule').innerHTML = cl.formule.length
+      ? cl.formule.map(function (f) { return '<tr><td>' + escapeHtml(f.nome) + '</td><td>' + f.clienti + '</td></tr>'; }).join('') +
+        '<tr><td><strong>Totale</strong></td><td><strong>' + cl.paganti + '</strong></td></tr>'
+      : '<tr><td colspan="2" style="color:var(--tenue)">Nessuna giornata in questo mese.</td></tr>';
+
     // --- aziendali
     var a = r.aziendaliTotali;
     el('rsAzSommario').textContent = 'Incassa MML · ' + (a.conta
@@ -2948,6 +3004,19 @@
     var finita = function () { y = doc.lastAutoTable.finalY + 10; };
 
     var at = r.aziendaliTotali, pt = r.privatiTotali;
+
+    // --- clienti
+    var cl = r.clienti || { paganti: 0, freelabGratis: 0, freelabCottura: 0, formule: [] };
+    titolo('Clienti del mese');
+    doc.autoTable(Object.assign({}, stile, {
+      startY: y,
+      head: [['Clienti', 'Numero']],
+      body: cl.formule.map(function (f) { return ['Paganti \u00b7 ' + f.nome, f.clienti]; })
+        .concat([['Freelab gratis', cl.freelabGratis], ['Freelab solo cottura', cl.freelabCottura]]),
+      foot: [['Totale paganti', cl.paganti]],
+      columnStyles: { 1: { halign: 'right', cellWidth: 36 } }
+    }));
+    finita();
 
     // --- riepilogo: chi incassa e quanto
     var costiCCC = costi.righe.filter(function (x) { return x.paga === 'CCC'; });
