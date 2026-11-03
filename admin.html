@@ -3245,7 +3245,7 @@
     var incassa = [['Privati · paganti brunch, merenda e aperitivo', 'CCC', privatiCCC],
                    ['P. IVA', 'MML', pivaMML]];
     if (Math.round(pivaCCC * 100) !== 0) incassa.push(['P. IVA · consumazioni', 'CCC', pivaCCC]);
-    incassa.push(['Freelab a pagamento · ' + ((r.clienti && r.clienti.freelabCottura) || 0) + ' cottura', 'MML', pt.freelabIncasso || 0]);
+    incassa.push(['Freelab a pagamento · ' + ((r.clienti && r.clienti.freelabCottura) || 0) + ' \u00d7 cottura', 'MML', pt.freelabIncasso || 0]);
 
     resoconto.vivo = {
       righe: righe, totale: totale, saldo: saldo,
@@ -3450,32 +3450,10 @@
     doc.text('Generato il ' + new Date().toLocaleDateString('it-IT'), 210 - M, y, { align: 'right' });
     y += 8;
 
-    // --- i tre numeri
     var v = r.vivo;
-    var saldo = v.saldo;
-    var pari = Math.round(saldo * 100) === 0;
-    var tessere = [
-      ['Quota CCC', eur2(v.qCCC)],
-      ['Quota MML', eur2(v.qMML)],
-      [pari ? 'Pari' : (saldo > 0 ? 'MML deve a CCC' : 'CCC deve a MML'), eur2(Math.abs(saldo))]
-    ];
-    var tw = (W - 8) / 3;
-    tessere.forEach(function (t, i) {
-      var x = M + i * (tw + 4);
-      doc.setFillColor.apply(doc, i === 2 ? VINO : CHIARO);
-      doc.roundedRect(x, y, tw, 20, 2.5, 2.5, 'F');
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
-      doc.setTextColor.apply(doc, i === 2 ? [251, 243, 238] : GRIGIO);
-      doc.text(t[0], x + 4, y + 7);
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
-      doc.setTextColor.apply(doc, i === 2 ? [255, 255, 255] : VINO);
-      doc.text(t[1], x + 4, y + 15);
-    });
-    y += 28;
-
     var stile = {
       theme: 'grid', margin: { left: M, right: M },
-      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2, lineColor: [225, 210, 215], lineWidth: 0.2, textColor: [40, 30, 35] },
+      styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.4, lineColor: [225, 210, 215], lineWidth: 0.2, textColor: [40, 30, 35] },
       headStyles: { fillColor: VINO, textColor: [255, 255, 255], fontStyle: 'bold' },
       footStyles: { fillColor: CHIARO, textColor: VINO, fontStyle: 'bold' },
       showFoot: 'lastPage'
@@ -3490,111 +3468,118 @@
       }
       y += 3;
     };
-    var finita = function () { y = doc.lastAutoTable.finalY + 10; };
+    var finita = function () { y = doc.lastAutoTable.finalY + 8; };
     var dx = { halign: 'right' };
-
+    var grassetto = function (t, extra) { return { content: t, styles: Object.assign({ fontStyle: 'bold' }, extra || {}) }; };
     var at = r.aziendaliTotali, pt = r.privatiTotali;
+    var saldo = v.saldo, pari = Math.round(saldo * 100) === 0;
+    var nettoCCC = v.incCCC - v.spCCC, nettoMML = v.incMML - v.spMML;
 
-    // --- il conto del mese
-    titolo('Il conto del mese');
+    // --- il conto: incasso, spese, netto diviso due
+    titolo('Il conto');
     doc.autoTable(Object.assign({}, stile, {
       startY: y,
       head: [['', 'CCC', 'MML', 'Totale']],
       body: [
-        ['Incassato (CCC: privati · MML: P. IVA e Freelab)', eur2(v.incCCC), eur2(v.incMML), eur2(v.incCCC + v.incMML)],
-        ['Spese pagate', '- ' + eur2(v.spCCC), '- ' + eur2(v.spMML), '- ' + eur2(v.spCCC + v.spMML)],
-        [{ content: 'Utile da dividere', styles: { fontStyle: 'bold' } }, '', '', { content: eur2(v.utile), styles: { fontStyle: 'bold' } }],
-        ['Metà dell’utile', eur2(v.meta), eur2(v.meta), eur2(v.utile)],
-        ['+ Spese ripagate', '+ ' + eur2(v.spCCC), '+ ' + eur2(v.spMML), '+ ' + eur2(v.spCCC + v.spMML)],
-        [{ content: 'Quota spettante', styles: { fontStyle: 'bold' } }, { content: eur2(v.qCCC), styles: { fontStyle: 'bold' } }, { content: eur2(v.qMML), styles: { fontStyle: 'bold' } }, { content: eur2(v.qCCC + v.qMML), styles: { fontStyle: 'bold' } }],
-        ['- Già incassato', '- ' + eur2(v.incCCC), '- ' + eur2(v.incMML), '- ' + eur2(v.incCCC + v.incMML)]
+        ['Incasso (quello che ognuno ha in cassa)', eur2(v.incCCC), eur2(v.incMML), eur2(v.incCCC + v.incMML)],
+        ['- Spese (quello che ognuno ha speso)', eur2(v.spCCC), eur2(v.spMML), eur2(v.spCCC + v.spMML)],
+        [grassetto('= Netto (incasso - spese)', { fillColor: CHIARO }), grassetto(eur2(nettoCCC), { fillColor: CHIARO }), grassetto(eur2(nettoMML), { fillColor: CHIARO }), grassetto(eur2(v.utile), { fillColor: CHIARO })],
+        [grassetto('Netto diviso due (quello che spetta a ciascuno)', { fillColor: CHIARO }), grassetto(eur2(v.meta), { fillColor: CHIARO }), grassetto(eur2(v.meta), { fillColor: CHIARO }), { content: '', styles: { fillColor: CHIARO } }]
       ],
-      foot: [['Da dare / avere',
-        pari ? '-' : (saldo > 0 ? 'riceve ' + eur2(saldo) : 'deve ' + eur2(-saldo)),
-        pari ? '-' : (saldo > 0 ? 'deve ' + eur2(saldo) : 'riceve ' + eur2(-saldo)),
-        pari ? 'pari' : (saldo > 0 ? 'MML paga a CCC ' : 'CCC paga a MML ') + eur2(Math.abs(saldo))]],
+      foot: [['Differenza (netto - netto diviso due)',
+        pari ? '-' : (nettoCCC - v.meta > 0 ? 'ha ' + eur2(nettoCCC - v.meta) + ' in più' : 'ha ' + eur2(v.meta - nettoCCC) + ' in meno'),
+        pari ? '-' : (nettoMML - v.meta > 0 ? 'ha ' + eur2(nettoMML - v.meta) + ' in più' : 'ha ' + eur2(v.meta - nettoMML) + ' in meno'),
+        '']],
+      footStyles: { fillColor: VINO, textColor: [255, 255, 255], fontStyle: 'bold' },
       columnStyles: { 1: dx, 2: dx, 3: dx }
     }));
-    finita();
+    y = doc.lastAutoTable.finalY + 5;
 
-    // --- clienti
+    // --- chi paga chi
+    doc.setFillColor.apply(doc, VINO);
+    doc.roundedRect(M, y, W, 17, 2.5, 2.5, 'F');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(251, 243, 238);
+    doc.text('Chi paga chi', M + 5, y + 6);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(255, 255, 255);
+    doc.text(pari ? 'Tra voi è tutto pari' : (saldo > 0 ? 'MML paga a CCC ' : 'CCC paga a MML ') + eur2(Math.abs(saldo)), M + 5, y + 13);
+    y += 25;
+
+    // --- clienti: tre riquadri
     var cl = r.clienti || { paganti: 0, freelabGratis: 0, freelabCottura: 0, formule: [] };
-    var gm = 0, gw = 0;
-    (r.privati || []).forEach(function (e) {
-      var g = new Date(e.data + 'T12:00:00').getDay();
-      if (g === 3) gm++; else if (g === 0 || g === 6) gw++;
-    });
     titolo('Clienti del mese');
-    doc.autoTable(Object.assign({}, stile, {
-      startY: y,
-      head: [['Clienti', 'Numero']],
-      body: cl.formule.map(function (f) { return ['Paganti · ' + f.nome, f.clienti]; })
-        .concat([['Freelab a pagamento (cottura)', cl.freelabCottura], ['Freelab gratuiti', cl.freelabGratis]]),
-      foot: [['Totale paganti · Merc. ' + (cl.mercoledi || 0) + ' · Weekend ' + (cl.weekend || 0), cl.paganti],
-             ['Giornate confermate · Merc. ' + gm + ' · Weekend ' + gw, (r.privati || []).length]]
-        .concat(cl.daConfermare ? [['Prenotati da confermare (non compresi)', cl.daConfermare]] : []),
-      columnStyles: { 1: { halign: 'right', cellWidth: 36 } }
-    }));
-    finita();
+    var box = [
+      ['PAGANTI', String(cl.paganti), 'Merc. ' + (cl.mercoledi || 0) + ' · Weekend ' + (cl.weekend || 0) + (cl.altri ? ' · Altri ' + cl.altri : '')],
+      ['FREELAB A PAGAMENTO', String(cl.freelabCottura), (cl.freelabCottura || 0) + ' × cottura = ' + eur2(cl.freelabIncasso || 0)],
+      ['FREELAB GRATUITI', String(cl.freelabGratis), '']
+    ];
+    var bw = (W - 8) / 3;
+    box.forEach(function (bx, i) {
+      var x = M + i * (bw + 4);
+      doc.setDrawColor(225, 210, 215); doc.setLineWidth(0.5);
+      doc.roundedRect(x, y, bw, 22, 2.5, 2.5, 'S');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor.apply(doc, GRIGIO);
+      doc.text(bx[0], x + 4, y + 6);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.setTextColor.apply(doc, VINO);
+      doc.text(bx[1], x + 4, y + 14.5);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, GRIGIO);
+      if (bx[2]) doc.text(bx[2], x + 4, y + 19.5);
+    });
+    y += 30;
+    if (cl.daConfermare) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, GRIGIO);
+      doc.text('Prenotati da confermare, non compresi: ' + cl.daConfermare, M, y - 4);
+    }
 
-    // --- chi incassa
-    if (y > 238) { doc.addPage(); y = 16; }
-    titolo('Chi incassa');
-    doc.autoTable(Object.assign({}, stile, {
-      startY: y,
-      head: [['Voce', 'Chi incassa', 'Importo']],
-      body: v.incassa.map(function (x) { return [x[0], x[1], eur2(x[2])]; })
-        .concat([['Costi del mese (CCC e MML insieme)', '-', eur2(v.spCCC + v.spMML)]]),
-      foot: [['Totale incassato', '', eur2(v.incCCC + v.incMML)]],
-      columnStyles: { 1: { cellWidth: 34 }, 2: { halign: 'right', cellWidth: 36 } }
-    }));
-    finita();
-
-    // --- costi di CCC e di MML
-    var tabellaCosti = function (nome, voci, tot) {
-      titolo('Costi del mese ' + nome);
+    // --- tabelle CCC e MML
+    var tabellaParte = function (nome, incassi, spese, totInc, totSpese, netto) {
+      if (y > 200) { doc.addPage(); y = 16; }
+      titolo(nome === 'CCC' ? 'CCC · Crazy Cat Café' : 'MML · Mani Milano Lab');
+      var sez = function (t) { return [{ content: t, colSpan: 2, styles: { fillColor: [246, 238, 240], fontStyle: 'bold', textColor: VINO, fontSize: 8 } }]; };
+      var tot = function (t, n) { return [grassetto(t, { fillColor: CHIARO, textColor: VINO }), grassetto(eur2(n), { fillColor: CHIARO, textColor: VINO, halign: 'right' })]; };
       doc.autoTable(Object.assign({}, stile, {
         startY: y,
         head: [['Voce', 'Importo']],
-        body: voci.map(function (x) { return [x[0], eur2(x[1])]; }),
-        foot: [['Totale costi ' + nome, eur2(tot)]],
+        body: [sez('INCASSI')].concat(incassi.map(function (x) { return [x[0], eur2(x[1])]; }))
+          .concat([tot('Totale incassi ' + nome, totInc), sez('SPESE')])
+          .concat(spese.map(function (x) { return [x[0], eur2(x[1])]; }))
+          .concat([tot('Totale spese ' + nome, totSpese)]),
+        foot: [['Netto ' + nome + ' (incassi - spese)', eur2(netto)]],
         columnStyles: { 1: { halign: 'right', cellWidth: 36 } }
       }));
       finita();
     };
-    tabellaCosti('CCC', v.vociCCC, v.spCCC);
-    tabellaCosti('MML', v.vociMML, v.spMML);
+    var incassiDi = function (p) { return v.incassa.filter(function (x) { return x[1] === p; }).map(function (x) { return [x[0], x[2]]; }); };
+    tabellaParte('CCC', incassiDi('CCC'), v.vociCCC, v.incCCC, v.spCCC, nettoCCC);
+    tabellaParte('MML', incassiDi('MML'), v.vociMML, v.incMML, v.spMML, nettoMML);
 
-    // --- dettaglio privati
-    titolo('Dettaglio privati', 'Incassa CCC · ' + pt.conta + (pt.conta === 1 ? ' giornata' : ' giornate') + ' · ' + pt.ospiti + ' paganti');
-    if (r.privati.length) {
+    // --- elenco dettagliato degli eventi
+    if (y > 225) { doc.addPage(); y = 16; }
+    titolo('Elenco dettagliato degli eventi');
+    var righeEv = [];
+    (r.privati || []).forEach(function (e) {
+      var det = (e.pagantiBrunch || e.pagantiAperitivo)
+        ? [e.pagantiBrunch ? e.pagantiBrunch + ' brunch' : '', e.pagantiAperitivo ? e.pagantiAperitivo + ' aperitivo' : ''].filter(String).join(' + ')
+        : e.ospiti + ' paganti';
+      righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Privati · ' + det, 'CCC', e.ospiti, eur2(e.conto.incasso - (e.conto.freelabIncasso || 0)),
+        'CCC ' + eur2(e.conto.costiCCC) + ' · MML ' + eur2(e.conto.costiMML)] });
+      if (e.freelabCottura || e.freelabGratis) {
+        righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Freelab · ' + (e.freelabCottura || 0) + ' a pagamento, ' + (e.freelabGratis || 0) + ' gratuiti', 'MML',
+          (e.freelabCottura || 0) + (e.freelabGratis || 0), eur2(e.conto.freelabIncasso || 0), '-'] });
+      }
+    });
+    (r.aziendali || []).forEach(function (e) {
+      righeEv.push({ d: e.data, riga: [dataIt(e.data), 'P. IVA · ' + (e.azienda || '-'), 'MML', e.persone, eur2(e.conto.inManoMML), '-'] });
+      if (e.conto.inManoCCC) righeEv.push({ d: e.data, riga: [dataIt(e.data), 'P. IVA · consumazioni ' + (e.azienda || ''), 'CCC', '', eur2(e.conto.inManoCCC), '-'] });
+    });
+    righeEv.sort(function (p, q) { return p.d < q.d ? -1 : p.d > q.d ? 1 : 0; });
+    if (righeEv.length) {
       doc.autoTable(Object.assign({}, stile, {
         startY: y,
-        head: [['Data', 'Paganti', 'Freelab', 'Incasso', 'Costi MML', 'Costi CCC']],
-        body: r.privati.map(function (e) {
-          return [dataIt(e.data), e.ospiti, (e.freelabCottura || 0) + ' + ' + (e.freelabGratis || 0) + ' gr.', eur2(e.conto.incasso),
-                  eur2(e.conto.costiMML), eur2(e.conto.costiCCC)];
-        }),
-        foot: [['Totale', pt.ospiti, '', eur2(pt.incasso), eur2(pt.costiMML), eur2(pt.costiCCC)]],
-        columnStyles: { 1: dx, 2: dx, 3: dx, 4: dx, 5: dx }
-      }));
-      finita();
-    } else {
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, GRIGIO);
-      doc.text('Nessuna giornata in questo mese.', M, y + 5); y += 14;
-    }
-
-    // --- dettaglio P. IVA
-    titolo('Dettaglio P. IVA', 'Incassa MML · ' + at.conta + (at.conta === 1 ? ' evento' : ' eventi'));
-    if (r.aziendali.length) {
-      doc.autoTable(Object.assign({}, stile, {
-        startY: y,
-        head: [['Data', 'Azienda', 'Persone', 'Totale, IVA inclusa']],
-        body: r.aziendali.map(function (e) {
-          return [dataIt(e.data), e.azienda || '-', e.persone, eur2(e.conto.totale)];
-        }),
-        foot: [['Totale', '', '', eur2(at.totale)]],
-        columnStyles: { 2: dx, 3: dx }
+        head: [['Data', 'Evento', 'Incassa', 'Persone', 'Incasso', 'Spese giornata']],
+        body: righeEv.map(function (x) { return x.riga; }),
+        foot: [['Totale', '', '', '', eur2(v.incCCC + v.incMML), '']],
+        styles: Object.assign({}, stile.styles, { fontSize: 8 }),
+        columnStyles: { 2: { cellWidth: 16 }, 3: dx, 4: dx }
       }));
       finita();
     } else {
