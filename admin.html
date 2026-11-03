@@ -370,6 +370,10 @@
                   <label for="pvFreelabCottura">Freelab solo cottura</label>
                   <input type="text" id="pvFreelabCottura" inputmode="numeric" style="width:90px" placeholder="0">
                 </div>
+                <div class="campo" style="margin-bottom:4px">
+                  <label for="pvFreelabPrezzo">Cottura Freelab · € a testa</label>
+                  <input type="text" id="pvFreelabPrezzo" inputmode="decimal" style="width:90px" placeholder="10">
+                </div>
               </div>
               <div id="pvSuggerimentoPren" class="nascosto" style="text-align:right; margin-bottom:8px">
                 <button type="button" id="btnUsaPrenotati" class="azione"
@@ -1307,7 +1311,7 @@
     pvMateriale: 'materialePersona', pvInsegnanti: 'insegnanti',
     pvOreInsegnante: 'oreInsegnante', pvCostoInsegnante: 'costoInsegnanteOra',
     pvFood: 'foodPersona',
-    pvFreelabGratis: 'freelabGratis', pvFreelabCottura: 'freelabCottura',
+    pvFreelabGratis: 'freelabGratis', pvFreelabCottura: 'freelabCottura', pvFreelabPrezzo: 'freelabPrezzo',
     pvNote: 'note'
   };
   var TESTO_PV = ['data', 'note'];
@@ -1557,6 +1561,7 @@
       var campo = CAMPI_PV[id];
       e[campo] = TESTO_PV.indexOf(campo) !== -1 ? el(id).value : numero(id);
     });
+    if (el('pvFreelabPrezzo').value.trim() === '') e.freelabPrezzo = 10;
     // giornata da confermare: finche non scrivi i numeri veri, i conti usano quelli delle prenotazioni
     var provvOspiti = false, provvIncasso = false;
     if (modoConferma && privatoCorrente) {
@@ -1578,7 +1583,8 @@
 
   /** Stessa formula del server, per vedere i numeri mentre scrivi. */
   function contoPrivatoDi(e) {
-    var incasso = e.ospiti * e.prezzoTesta;
+    var freelabIncasso = (Number(e.freelabCottura) || 0) * (Number(e.freelabPrezzo) || 0);
+    var incasso = e.ospiti * e.prezzoTesta + freelabIncasso;
     var materiale = e.ospiti * e.materialePersona;
     var docenza = e.insegnanti * e.oreInsegnante * e.costoInsegnanteOra;
     var costiMML = materiale + docenza;
@@ -1588,7 +1594,7 @@
     var utile = incasso - costiMML - costiCCC;
     var meta = utile / 2;
     return {
-      incasso: incasso, materiale: materiale, docenza: docenza, costiMML: costiMML,
+      incasso: incasso, freelabIncasso: freelabIncasso, materiale: materiale, docenza: docenza, costiMML: costiMML,
       food: food, personale: personale, costiCCC: costiCCC,
       utile: utile, meta: meta,
       spettaCCC: costiCCC + meta, spettaMML: costiMML + meta,
@@ -1633,7 +1639,8 @@
     }
 
     el('pvConto').innerHTML =
-      voce('Incasso · ' + e.ospiti + ' × ' + euro(e.prezzoTesta), c.incasso) +
+      voce('Incasso · ' + e.ospiti + ' × ' + euro(e.prezzoTesta), c.incasso - c.freelabIncasso) +
+      (c.freelabIncasso ? voce('Cottura Freelab · ' + e.freelabCottura + ' × ' + euro(e.freelabPrezzo), c.freelabIncasso) : '') +
       voce('Costi MML', -c.costiMML) +
       voce('Costi CCC', -c.costiCCC) +
       '<div class="voce somma"><span>Utile</span><span>' + euro(c.utile) + '</span></div>' +
@@ -2495,7 +2502,11 @@
     el('rsClCottura').textContent = cl.freelabCottura;
     el('rsClFormule').innerHTML = cl.formule.length
       ? cl.formule.map(function (f) { return '<tr><td>' + escapeHtml(f.nome) + '</td><td>' + f.clienti + '</td></tr>'; }).join('') +
-        '<tr><td><strong>Totale</strong></td><td><strong>' + cl.paganti + '</strong></td></tr>'
+        '<tr><td><strong>Totale paganti</strong></td><td><strong>' + cl.paganti + '</strong></td></tr>' +
+        '<tr><td>di cui mercoledì</td><td>' + (cl.mercoledi || 0) + '</td></tr>' +
+        '<tr><td>di cui weekend</td><td>' + (cl.weekend || 0) + '</td></tr>' +
+        (cl.altri ? '<tr><td>di cui altri giorni</td><td>' + cl.altri + '</td></tr>' : '') +
+        (cl.freelabCottura ? '<tr><td>Freelab solo cottura · incasso ' + euro(cl.freelabIncasso || 0) + '</td><td>' + cl.freelabCottura + '</td></tr>' : '')
       : '<tr><td colspan="2" style="color:var(--tenue)">Nessuna giornata in questo mese.</td></tr>';
 
     // --- aziendali
@@ -3033,8 +3044,8 @@
       startY: y,
       head: [['Clienti', 'Numero']],
       body: cl.formule.map(function (f) { return ['Paganti \u00b7 ' + f.nome, f.clienti]; })
-        .concat([['Freelab gratis', cl.freelabGratis], ['Freelab solo cottura', cl.freelabCottura]]),
-      foot: [['Totale paganti', cl.paganti]].concat(cl.daConfermare ? [['Prenotati da confermare (non compresi)', cl.daConfermare]] : []),
+        .concat([['Freelab gratis', cl.freelabGratis], ['Freelab solo cottura (incasso ' + eur2(cl.freelabIncasso || 0) + ')', cl.freelabCottura]]),
+      foot: [['Totale paganti', cl.paganti], ['di cui mercoledì', cl.mercoledi || 0], ['di cui weekend', cl.weekend || 0]].concat(cl.altri ? [['di cui altri giorni', cl.altri]] : []).concat(cl.daConfermare ? [['Prenotati da confermare (non compresi)', cl.daConfermare]] : []),
       columnStyles: { 1: { halign: 'right', cellWidth: 36 } }
     }));
     finita();
