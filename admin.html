@@ -371,7 +371,7 @@
       </div>
       <div class="ev-k4" id="evContatori"></div>
       <div class="ev-leg">
-        <span><i style="background:#7a3550"></i>Privati (paga CCC)</span>
+        <span><i style="background:#7a3550"></i>Privati</span>
         <span><i style="background:#3f5e4e"></i>P. IVA (paga MML)</span>
         <span style="color:#A9C9A6">✓ Confermato</span>
         <span style="color:#E6B422">▢ oggi</span>
@@ -390,7 +390,7 @@
 
     <!-- PRIVATI ------------------------------------------------------- -->
     <div data-pagina="privati" class="nascosto">
-      <div class="sez-giorno">Privati <span class="pastiglia" style="background:rgba(169,201,166,.25); color:#C9E0C6; font-family:Archivo,sans-serif; font-size:11px">paga CCC</span></div>
+      <div class="sez-giorno">Privati</div>
       <div id="giornoSenzaPrivato" class="carta nascosto" style="margin-bottom:18px">
         <p style="margin:0 0 12px; color:var(--tenue)">Nessuna giornata privati per questo giorno.</p>
         <button type="button" class="azione piena" id="btnAggiungiPrivato">Aggiungi privati</button>
@@ -439,7 +439,6 @@
             <div class="carta">
               <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px">
                 <h2 style="margin:0">Incasso</h2>
-                <span class="pastiglia" style="background:rgba(169,201,166,.25); color:#C9E0C6">incassa CCC</span>
               </div>
               <div class="campo" id="pvDataNuova" style="margin-bottom:6px"><label for="pvData">Data</label><input type="date" id="pvData" style="width:auto"></div>
               <div id="pvDataFissa" class="nascosto" style="margin-bottom:12px">
@@ -463,7 +462,9 @@
                 <span id="pvDoppiaTesto"></span>
                 <button type="button" class="azione" id="btnApriDoppia" style="min-height:34px; padding:0 12px; font-size:13px; margin-top:8px">Apri quella esistente</button>
               </div>
-              <div id="pvModulo" class="nascosto" style="border:1px dashed var(--legno-chiaro); border-radius:14px; padding:12px 14px; margin-bottom:16px"></div>
+              <div id="pvModulo" style="border:1.5px dashed var(--legno-chiaro); border-radius:14px; padding:14px 16px"></div>
+              <!-- i vecchi campi restano nascosti: li riempie il box, cosi il resto dell app non cambia -->
+              <div class="nascosto" id="pvVecchiCampi">
               <div class="campo" style="margin-bottom:4px">
                 <label for="pvOspiti">Paganti in tutto</label>
                 <input type="text" id="pvOspiti" inputmode="numeric" style="width:90px">
@@ -476,6 +477,10 @@
                 <div class="campo" style="margin-bottom:4px">
                   <label for="pvPagantiAperitivo">Paganti · Aperitivo Clay</label>
                   <input type="text" id="pvPagantiAperitivo" inputmode="numeric" style="width:90px" placeholder="0">
+                </div>
+                <div class="campo" style="margin-bottom:4px">
+                  <label for="pvBuoniCCC">di cui buoni CCC · Ecommerce</label>
+                  <input type="text" id="pvBuoniCCC" inputmode="numeric" style="width:90px" placeholder="0">
                 </div>
               </div>
               <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:8px">
@@ -525,12 +530,13 @@
                 <span style="font-size:14px; color:#F0DAD5">Totale incassato</span>
                 <strong class="conto-grande" id="pvIncasso">€ 0,00</strong>
               </div>
+              </div>
             </div>
 
             <div class="carta" style="box-shadow:inset 0 0 0 1px rgba(242,167,159,.4)">
               <h2 style="color:var(--salmone)">Costi MML</h2>
               <div class="campo" style="margin-bottom:4px">
-                <label for="pvMateriale">Materiale, a ospite</label>
+                <label for="pvMateriale">Materiale, a persona</label>
                 <input type="text" id="pvMateriale" inputmode="decimal" style="width:110px">
               </div>
               <div class="conticino" id="pvCalcMateriale"></div>
@@ -552,7 +558,7 @@
             <div class="carta" style="box-shadow:inset 0 0 0 1px rgba(169,201,166,.4)">
               <h2 style="color:var(--salvia)">Costi CCC</h2>
               <div class="campo" style="margin-bottom:4px">
-                <label for="pvFood">Food, a ospite</label>
+                <label for="pvFood">Food, a persona</label>
                 <input type="text" id="pvFood" inputmode="decimal" style="width:110px">
               </div>
               <div class="conticino" id="pvCalcFood"></div>
@@ -602,7 +608,7 @@
 
         <div class="carta" style="margin-top:18px">
           <h2 style="margin-bottom:6px">Chi deve a chi, e perché</h2>
-          <p style="margin:0 0 20px; font-size:14px; color:var(--tenue)">Qui incassa tutto il Crazy Cat, quindi il movimento è sempre nello stesso verso.</p>
+          <p style="margin:0 0 20px; font-size:14px; color:var(--tenue)">Ognuno tiene quello che ha incassato: si dividono a metà l’utile e ognuno si riprende i suoi costi.</p>
           <div id="pvPerche"></div>
         </div>
       </div>
@@ -1722,7 +1728,7 @@
     pvMateriale: 'materialePersona', pvInsegnanti: 'insegnanti',
     pvOreInsegnante: 'oreInsegnante', pvCostoInsegnante: 'costoInsegnanteOra',
     pvFood: 'foodPersona',
-    pvPagantiBrunch: 'pagantiBrunch', pvPagantiAperitivo: 'pagantiAperitivo',
+    pvPagantiBrunch: 'pagantiBrunch', pvPagantiAperitivo: 'pagantiAperitivo', pvBuoniCCC: 'buoniCCC',
     pvFreelabGratis: 'freelabGratis', pvFreelabCottura: 'freelabCottura', pvFreelabPrezzo: 'freelabPrezzo',
     pvDecorazione: 'decorazione', pvCristallina: 'cristallina', pvGiftcard: 'giftcard', pvBuono: 'buono',
     pvNote: 'note'
@@ -1734,6 +1740,7 @@
     { campo: 'giftcard', nome: 'Gift card MM', incassa: 'MML', prezzo: 55 },
     { campo: 'buono', nome: 'Buono MM', incassa: 'MML', prezzo: 55 }
   ];
+  function prezzoBuonoCCC() { return Number(privatoCorrente && privatoCorrente.prezzoBuonoCCC) || 55; }
   function prezzoExtra(campo, e) {
     var pz = (e && e.prezziExtra) || (privatoCorrente && privatoCorrente.prezziExtra) || {};
     var v = VOCI_EXTRA.filter(function (x) { return x.campo === campo; })[0];
@@ -1922,101 +1929,189 @@
     el('elencoPrivati').classList.add('nascosto');
     el('schedaPrivato').classList.remove('nascosto');
     if (vistaCorrente !== 'giorno') passo({ s: 'app', modo: modo, vista: 'privati', scheda: true });
+    preparaBox(e);
     ricalcolaPrivato();
+  }
+
+  /* ---------- il box della giornata: le voci del modulo di Daniele, persone e importo, chi incassa */
+  var VOCI_TIPO = {
+    infrasettimanale: [
+      { k: 'superb', nome: 'Pagato CCC Superb', chi: 'CCC', prezzo: 55, paganti: true },
+      { k: 'ecommerce', nome: 'Pagato CCC Ecommerce', chi: 'CCC', prezzo: 55, paganti: true },
+      { k: 'decorazione', nome: 'Pagato CCC Decorazione', chi: 'CCC', prezzo: 45 },
+      { k: 'giftcard', nome: 'Gift card pagato MML', chi: 'MML', prezzo: 55 },
+      { k: 'buono', nome: 'Buono pagato MML', chi: 'MML', prezzo: 55 }
+    ],
+    weekend: [
+      { k: 'brunch', nome: 'Brunch pagato CCC', chi: 'CCC', prezzo: 65, paganti: true },
+      { k: 'aperitivo', nome: 'Ape pagato CCC', chi: 'CCC', prezzo: 55, paganti: true },
+      { k: 'cottura', nome: 'Freelab cottura pagato MML', chi: 'MML', prezzo: 10 },
+      { k: 'cristallina', nome: 'Freelab cristallina pagato MML', chi: 'MML', prezzo: 20 }
+    ]
+  };
+  var vociCorrenti = null;   // { tipo, superb: {n, eur}, ... }
+  var moduloRisposta = null;
+  var moduloChiesto = '';
+
+  function tipoDi(iso) {
+    var g = new Date((iso || oggiISO()) + 'T12:00:00').getDay();
+    return g === 0 || g === 6 ? 'weekend' : 'infrasettimanale';
+  }
+  function righeBox() { return VOCI_TIPO[(vociCorrenti && vociCorrenti.tipo) || 'infrasettimanale']; }
+  function prezzoVoce(r) {
+    var m = moduloRisposta || {};
+    var p = (m.prezziPaganti && m.prezziPaganti[r.k]) || (m.prezzi && m.prezzi[r.k]);
+    if (r.k === 'cottura') p = Number(privatoCorrente && privatoCorrente.freelabPrezzo) || p;
+    return Number(p) || r.prezzo;
+  }
+  function vociVuote(tipo) {
+    var v = { tipo: tipo };
+    VOCI_TIPO[tipo].forEach(function (r) { v[r.k] = { n: 0, eur: 0 }; });
+    return v;
+  }
+  /** Le voci di una giornata: quelle salvate, oppure ricostruite dai campi di una giornata vecchia. */
+  function vociDaEvento(e) {
+    var tipo = tipoDi(e.data);
+    if (e.voci && e.voci.tipo) {
+      var v = vociVuote(e.voci.tipo);
+      Object.keys(v).forEach(function (k) { if (k !== 'tipo' && e.voci[k]) v[k] = { n: Number(e.voci[k].n) || 0, eur: Number(e.voci[k].eur) || 0 }; });
+      return v;
+    }
+    var v2 = vociVuote(tipo);
+    if (!e.id || e.daSalvare) return v2;   // ancora da confermare: si parte da zero, i numeri li da Daniele
+    var pt = Number(e.prezzoTesta) || 0, osp = Number(e.ospiti) || 0;
+    var metti = function (k, n, prezzo) { if (v2[k]) v2[k] = { n: n, eur: Math.round(n * prezzo * 100) / 100 }; };
+    if (tipo === 'weekend') {
+      var br = Number(e.pagantiBrunch) || 0, ap = Number(e.pagantiAperitivo) || 0;
+      if (!br && !ap) ap = osp;
+      metti('brunch', br, pt); metti('aperitivo', ap, pt);
+      metti('cottura', Number(e.freelabCottura) || 0, Number(e.freelabPrezzo) || 10);
+      metti('cristallina', Number(e.cristallina) || 0, prezzoExtra('cristallina', e));
+    } else {
+      var bu = Math.min(Number(e.buoniCCC) || 0, osp);
+      metti('superb', osp - bu, pt); metti('ecommerce', bu, pt);
+      metti('decorazione', Number(e.decorazione) || 0, prezzoExtra('decorazione', e));
+      metti('giftcard', Number(e.giftcard) || 0, prezzoExtra('giftcard', e));
+      metti('buono', Number(e.buono) || 0, prezzoExtra('buono', e));
+    }
+    return v2;
+  }
+  function vociDalModulo(r) {
+    var v = vociVuote((vociCorrenti && vociCorrenti.tipo) || 'infrasettimanale');
+    var val = r.valori || {};
+    VOCI_TIPO[v.tipo].forEach(function (x) {
+      var n = Number(val[x.k]) || 0;
+      v[x.k] = { n: n, eur: Math.round(n * prezzoVoce(x) * 100) / 100 };
+    });
+    return v;
+  }
+
+  function preparaBox(e) {
+    vociCorrenti = vociDaEvento(e);
+    moduloRisposta = null;
+    disegnaBox();
     caricaModulo(e.data);
   }
 
-  /* ---------- il modulo di Daniele: lo leggo, lo confronto con le email, i numeri li metti tu */
-  var moduloChiesto = '';
   function caricaModulo(data) {
-    var box = el('pvModulo');
     moduloChiesto = data || '';
-    box.classList.add('nascosto');
-    box.innerHTML = '';
     if (!data || data > oggiISO()) return;   // per un giorno che deve ancora venire non c e niente da leggere
-    box.classList.remove('nascosto');
-    box.innerHTML = '<div style="font-size:13px; color:var(--tenue)">Leggo il modulo di Daniele…</div>';
     chiama({ azione: 'modulo', data: data }).then(function (r) {
       if (moduloChiesto !== data) return;   // nel frattempo hai aperto un altra giornata
-      disegnaModulo(r);
+      moduloRisposta = r;
+      // la giornata non ha ancora numeri suoi: prendo quelli del modulo
+      var salvate = privatoCorrente && privatoCorrente.voci;
+      if (r.trovato && !salvate && (!privatoCorrente.id || privatoCorrente.daSalvare)) vociCorrenti = vociDalModulo(r);
+      disegnaBox();
+      ricalcolaPrivato();
     }).catch(function (err) {
       if (moduloChiesto !== data) return;
-      box.innerHTML = '<div style="font-size:13px; color:var(--salmone)">Modulo di Daniele: ' + err.message + '</div>';
+      moduloRisposta = { errore: err.message };
+      disegnaBox();
     });
   }
 
-  function disegnaModulo(r) {
+  function totaliBox() {
+    var t = { nCCC: 0, eCCC: 0, nMML: 0, eMML: 0, nPag: 0, ePag: 0 };
+    righeBox().forEach(function (r) {
+      var x = vociCorrenti[r.k] || { n: 0, eur: 0 };
+      if (r.chi === 'CCC') { t.nCCC += x.n; t.eCCC += x.eur; } else { t.nMML += x.n; t.eMML += x.eur; }
+      if (r.paganti) { t.nPag += x.n; t.ePag += x.eur; }
+    });
+    return t;
+  }
+
+  function disegnaBox() {
     var box = el('pvModulo');
-    var testa = '<div style="font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--legno-chiaro); margin-bottom:8px">Dal modulo di Daniele' +
-      (r.moduli && r.moduli.length ? ' · ' + r.moduli.map(function (m) { return m.tipo + (m.quando ? ' ' + m.quando : ''); }).join(' + ') : '') + '</div>';
-    var problemi = (r.problemi || []).map(function (t) {
-      return '<div style="font-size:13px; color:var(--salmone); margin-top:6px">' + t + '</div>';
-    }).join('');
-    if (!r.trovato) {
-      box.innerHTML = testa + '<div style="font-size:13px; color:var(--tenue)">Per questo giorno Daniele non ha ancora compilato il modulo.</div>' + problemi;
-      return;
-    }
-    var v = r.valori || {};
-    var riga = function (sx, dx) {
-      return '<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid rgba(251,243,238,.1); font-size:14px">' + sx + dx + '</div>';
-    };
-    // i paganti CCC: fa fede il modulo, perche Daniele e li. Le email restano solo come confronto
-    var campo = function (attr, val, prezzo) {
-      return '<span style="display:flex; align-items:center; gap:8px; white-space:nowrap"><input type="text" inputmode="numeric" ' + attr + ' data-prezzo="' + prezzo +
-        '" value="' + val + '" style="width:56px; text-align:center"><strong data-tot>' + euro(val * prezzo) + '</strong></span>';
-    };
-    var torna = r.pagantiModulo === r.prenotatiEmail;
-    var h = testa + '<div style="font-size:13px; padding:2px 0 6px; color:' + (torna ? 'var(--salvia)' : 'var(--salmone)') + '">' +
-      (torna ? '✓ Paganti come nelle email: ' + r.prenotatiEmail
-             : '⚠ Nel modulo ' + r.pagantiModulo + ' paganti, dalle email erano ' + r.prenotatiEmail + ' · vale il modulo') + '</div>';
-    var pp = r.prezziPaganti || {};
-    [['superb', 'Superb'], ['ecommerce', 'Ecommerce'], ['brunch', 'Brunch'], ['aperitivo', 'Aperitivo']]
-      .filter(function (x) { return v[x[0]] !== undefined; })
-      .forEach(function (x) {
-        h += riga('<span>' + x[1] + ' · ' + euro(pp[x[0]] || 55) + ' <span class="pastiglia" style="font-size:10px; padding:1px 7px">CCC</span></span>',
-          campo('data-pag="' + x[0] + '"', v[x[0]], pp[x[0]] || 55));
-      });
-    // le voci da importare: le metto in campi che puoi correggere
-    var pz = r.prezzi || {};
-    var voci = [{ campo: 'decorazione', id: 'pvDecorazione', nome: 'Decorazione', chi: 'CCC' },
-                { campo: 'cottura', id: 'pvFreelabCottura', nome: 'Freelab cottura', chi: 'MML' },
-                { campo: 'cristallina', id: 'pvCristallina', nome: 'Freelab cristallina', chi: 'MML' },
-                { campo: 'giftcard', id: 'pvGiftcard', nome: 'Gift card MM', chi: 'MML' },
-                { campo: 'buono', id: 'pvBuono', nome: 'Buono MM', chi: 'MML' }]
-      .filter(function (x) { return v[x.campo] !== undefined; });
-    voci.forEach(function (x) {
-      x.prezzo = x.campo === 'cottura' ? (numero('pvFreelabPrezzo') || 10) : (Number(pz[x.campo]) || prezzoExtra(x.campo));
-      h += riga('<span>' + x.nome + ' · ' + euro(x.prezzo) + ' <span class="pastiglia" style="font-size:10px; padding:1px 7px">' + x.chi + '</span></span>',
-        campo('data-mod="' + x.id + '"', v[x.campo], x.prezzo));
+    if (!vociCorrenti) { box.innerHTML = ''; return; }
+    var m = moduloRisposta;
+    var salvate = privatoCorrente && privatoCorrente.voci;
+    var fonte;
+    if (m && m.trovato) fonte = 'Dal modulo di Daniele · ' + m.moduli.map(function (x) { return x.tipo + (x.quando ? ' ' + x.quando : ''); }).join(' + ');
+    else fonte = 'Modulo di Daniele · ' + vociCorrenti.tipo;
+    var h = '<div style="font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--legno-chiaro); font-weight:700; margin-bottom:6px">' + fonte + '</div>';
+    if (m && m.errore) h += '<div style="font-size:13px; color:var(--salmone); margin-bottom:6px">Non riesco a leggere il modulo: ' + m.errore + '</div>';
+    (m && m.problemi || []).forEach(function (t) { h += '<div style="font-size:13px; color:var(--salmone); margin-bottom:6px">' + t + '</div>'; });
+    if (m && !m.trovato && !m.errore) h += '<div style="font-size:13px; color:var(--tenue); margin-bottom:6px">Daniele non ha ancora compilato il modulo per questo giorno: puoi scrivere tu i numeri.</div>';
+    if (!m && privatoCorrente && privatoCorrente.data > oggiISO()) h += '<div style="font-size:13px; color:var(--tenue); margin-bottom:6px">Giornata futura: i numeri arrivano dal modulo di Daniele la sera del laboratorio.</div>';
+    h += '<div id="bxAvviso" style="font-size:13px; margin-bottom:6px"></div>';
+    if (m && m.trovato && salvate) h += '<button type="button" class="azione" id="btnRimettiModulo" style="min-height:30px; padding:0 12px; font-size:12px; margin-bottom:8px">Rimetti i numeri del modulo</button>';
+
+    h += '<div class="scorri"><table style="width:100%"><thead><tr><th>Voce</th><th style="text-align:center">Persone</th><th style="text-align:right">Importo</th></tr></thead><tbody>';
+    righeBox().forEach(function (r) {
+      var x = vociCorrenti[r.k];
+      var col = r.chi === 'CCC' ? 'rgba(169,201,166,.25); color:#C9E0C6' : 'rgba(242,167,159,.25); color:var(--salmone)';
+      h += '<tr><td>' + r.nome + ' · ' + euroTondo(prezzoVoce(r)) +
+        ' <span class="pastiglia" style="font-size:10px; padding:1px 7px; background:' + col + '">' + r.chi + '</span></td>' +
+        '<td style="text-align:center"><input type="text" inputmode="numeric" data-bx="' + r.k + '" data-q="n" value="' + x.n + '" style="width:60px; text-align:center"></td>' +
+        '<td style="text-align:right"><input type="text" inputmode="decimal" data-bx="' + r.k + '" data-q="eur" value="' + x.eur + '" style="width:110px; text-align:right; font-weight:700"></td></tr>';
     });
-    {
-      h += '<button type="button" class="azione piena" id="btnUsaModulo" style="width:100%; margin-top:12px">Usa questi numeri</button>' +
-        '<div id="pvModuloFatto" style="font-size:12px; color:var(--salvia); margin-top:6px; text-align:center"></div>';
-    }
-    box.innerHTML = h + problemi;
-    var intero = function (i) { return Math.max(0, Math.round(Number(String(i.value).replace(',', '.')) || 0)); };
-    box.querySelectorAll('input[data-prezzo]').forEach(function (i) {
+    h += '<tr style="font-weight:800; color:var(--salvia)"><td>Totale CCC</td><td style="text-align:center" id="bxNCCC"></td><td style="text-align:right" id="bxECCC"></td></tr>' +
+      '<tr style="font-weight:800; color:var(--salmone)"><td>Totale MML</td><td style="text-align:center" id="bxNMML"></td><td style="text-align:right" id="bxEMML"></td></tr>' +
+      '<tr style="font-weight:800; font-size:18px"><td style="font-family:Fraunces,serif">Totale giornata</td><td style="text-align:center" id="bxN"></td><td style="text-align:right; font-family:Fraunces,serif" id="bxE"></td></tr>' +
+      '</tbody></table></div>';
+    h += '<button type="button" class="azione piena" id="btnUsaModulo" style="width:100%; margin-top:14px">' +
+      (modoConferma ? 'Usa questi numeri e conferma la giornata' : 'Salva questi numeri') + '</button>' +
+      '<div style="font-size:12px; color:var(--tenue); margin-top:6px; text-align:center">Puoi cambiare persone e importi. Dopo puoi sempre riaprire la giornata e correggere.</div>';
+    box.innerHTML = h;
+
+    box.querySelectorAll('input[data-bx]').forEach(function (i) {
       i.addEventListener('input', function () {
-        i.parentNode.querySelector('[data-tot]').textContent = euro(intero(i) * Number(i.dataset.prezzo));
+        var r = righeBox().filter(function (x) { return x.k === i.dataset.bx; })[0];
+        var x = vociCorrenti[r.k];
+        if (i.dataset.q === 'n') {
+          x.n = Math.max(0, Math.round(Number(String(i.value).replace(',', '.')) || 0));
+          x.eur = Math.round(x.n * prezzoVoce(r) * 100) / 100;   // persone x prezzo, poi l importo lo puoi correggere
+          box.querySelector('input[data-bx="' + r.k + '"][data-q="eur"]').value = x.eur;
+        } else {
+          var t = String(i.value).trim();
+          if (t.indexOf(',') !== -1) t = t.replace(/\./g, '').replace(',', '.');
+          x.eur = Math.max(0, Number(t) || 0);
+        }
+        aggiornaTotaliBox();
+        ricalcolaPrivato();
       });
     });
-    var b = el('btnUsaModulo');
-    if (b) b.addEventListener('click', function () {
-      box.querySelectorAll('input[data-mod]').forEach(function (i) { el(i.dataset.mod).value = intero(i); });
-      // paganti e incasso CCC dal modulo
-      var pag = box.querySelectorAll('input[data-pag]');
-      if (pag.length) {
-        var n = 0, inc = 0, perCampo = {};
-        pag.forEach(function (i) { var k = intero(i); perCampo[i.dataset.pag] = k; n += k; inc += k * Number(i.dataset.prezzo); });
-        el('pvOspiti').value = n;
-        if (modoConferma) el('pvIncassoTot').value = Math.round(inc * 100) / 100;
-        else el('pvPrezzo').value = n ? Math.round(inc / n * 100) / 100 : 0;
-        if (perCampo.brunch !== undefined) el('pvPagantiBrunch').value = perCampo.brunch;
-        if (perCampo.aperitivo !== undefined) el('pvPagantiAperitivo').value = perCampo.aperitivo;
-      }
-      ricalcolaPrivato();
-      el('pvModuloFatto').textContent = 'Fatto: i numeri sono nella giornata. Ricordati di salvarla.';
-    });
+    el('btnUsaModulo').addEventListener('click', function () { el('btnSalvaPrivato').click(); });
+    var rim = el('btnRimettiModulo');
+    if (rim) rim.addEventListener('click', function () { vociCorrenti = vociDalModulo(moduloRisposta); disegnaBox(); ricalcolaPrivato(); });
+    aggiornaTotaliBox();
+  }
+
+  function aggiornaTotaliBox() {
+    if (!el('bxE')) return;
+    var t = totaliBox();
+    el('bxNCCC').textContent = t.nCCC; el('bxECCC').textContent = euro(t.eCCC);
+    el('bxNMML').textContent = t.nMML; el('bxEMML').textContent = euro(t.eMML);
+    el('bxN').textContent = t.nCCC + t.nMML; el('bxE').textContent = euro(t.eCCC + t.eMML);
+    var m = moduloRisposta, av = el('bxAvviso');
+    var pren = privatoCorrente && privatoCorrente.prenotati;
+    if (pren) {
+      var torna = t.nPag === pren;
+      av.style.color = torna ? 'var(--salvia)' : 'var(--salmone)';
+      av.textContent = torna ? '✓ Paganti CCC come nelle email: ' + pren
+        : '⚠ Qui ' + t.nPag + ' paganti CCC, dalle email erano ' + pren + (m && m.trovato ? ' · vale il modulo' : '');
+    } else av.textContent = '';
   }
 
   /** I pulsanti in alto e in basso nella giornata sono uno lo specchio dell altro. */
@@ -2090,23 +2185,29 @@
       var campo = CAMPI_PV[id];
       e[campo] = TESTO_PV.indexOf(campo) !== -1 ? el(id).value : numero(id);
     });
-    if (el('pvFreelabPrezzo').value.trim() === '') e.freelabPrezzo = 10;
-    // giornata da confermare: finche non scrivi i numeri veri, i conti usano quelli delle prenotazioni
-    var provvOspiti = false, provvIncasso = false;
-    if (modoConferma && privatoCorrente) {
-      if (el('pvOspiti').value.trim() === '') { e.ospiti = Number(privatoCorrente.prenotati) || 0; provvOspiti = true; }
-      if (el('pvIncassoTot').value.trim() === '') provvIncasso = true;
-    }
-    contoProvvisorio = provvOspiti || provvIncasso;
-    if (!personaleManuale) el('pvPersonaleTot').value = fasciaPersonale(e.ospiti);
+    // i numeri della giornata vengono tutti dal box: da qui ricavo i campi di sempre
+    var V = vociCorrenti || vociVuote(tipoDi(e.data));
+    var n = function (k) { return (V[k] && Number(V[k].n)) || 0; };
+    var eu = function (k) { return (V[k] && Number(V[k].eur)) || 0; };
+    e.voci = JSON.parse(JSON.stringify(V));
+    e.ospiti = n('superb') + n('ecommerce') + n('brunch') + n('aperitivo');   // paganti CCC del laboratorio
+    var ePag = eu('superb') + eu('ecommerce') + eu('brunch') + eu('aperitivo');
+    e.prezzoTesta = e.ospiti > 0 ? ePag / e.ospiti : 0;
+    e.incassoTotale = ePag;
+    e.buoniCCC = n('ecommerce');
+    e.pagantiBrunch = n('brunch'); e.pagantiAperitivo = n('aperitivo');
+    e.freelabCottura = n('cottura');
+    e.freelabPrezzo = n('cottura') ? eu('cottura') / n('cottura') : (Number(privatoCorrente && privatoCorrente.freelabPrezzo) || 10);
+    e.freelabGratis = Number(privatoCorrente && privatoCorrente.freelabGratis) || 0;
+    e.decorazione = n('decorazione'); e.giftcard = n('giftcard'); e.buono = n('buono'); e.cristallina = n('cristallina');
+    e.persone = 0;
+    Object.keys(V).forEach(function (k) { if (k !== 'tipo') e.persone += n(k); });
+    contoProvvisorio = false;
+    if (!personaleManuale) el('pvPersonaleTot').value = fasciaPersonale(e.persone);
     e.personale = 1;
     e.orePersonale = 1;
     e.costoPersonaleOra = numero('pvPersonaleTot');
-    if (modoConferma) {
-      e.confermato = !provvOspiti && !provvIncasso;
-      e.incassoTotale = provvIncasso ? (Number(privatoCorrente && privatoCorrente.incassoProvvisorio) || 0) : numero('pvIncassoTot');
-      e.prezzoTesta = e.ospiti > 0 ? e.incassoTotale / e.ospiti : 0;
-    }
+    if (modoConferma) e.confermato = true;
     return e;
   }
 
@@ -2120,17 +2221,27 @@
     });
     var incassoMML = freelabIncasso + extraMML;
     var incasso = e.ospiti * e.prezzoTesta + freelabIncasso + extraCCC + extraMML;
-    var materiale = e.ospiti * e.materialePersona;
+    var persone = e.ospiti;
+    if (e.voci) {
+      var eu = function (k) { return (e.voci[k] && Number(e.voci[k].eur)) || 0; };
+      persone = e.persone !== undefined ? e.persone : e.ospiti;
+      freelabIncasso = eu('cottura');
+      extraCCC = eu('decorazione');
+      extraMML = eu('giftcard') + eu('buono') + eu('cristallina');
+      incassoMML = freelabIncasso + extraMML;
+      incasso = eu('superb') + eu('ecommerce') + eu('brunch') + eu('aperitivo') + extraCCC + incassoMML;
+    }
+    var materiale = persone * e.materialePersona;
     var docenza = e.insegnanti * e.oreInsegnante * e.costoInsegnanteOra;
     var costiMML = materiale + docenza;
-    var food = e.ospiti * e.foodPersona;
+    var food = persone * e.foodPersona;
     var personale = e.personale * e.orePersonale * e.costoPersonaleOra;
     var costiCCC = food + personale;
     var utile = incasso - costiMML - costiCCC;
     var meta = utile / 2;
     return {
       incasso: incasso, freelabIncasso: freelabIncasso, extraCCC: extraCCC, extraMML: extraMML,
-      incassoMML: incassoMML, incassoCCC: incasso - incassoMML, materiale: materiale, docenza: docenza, costiMML: costiMML,
+      incassoMML: incassoMML, incassoCCC: incasso - incassoMML, persone: persone, materiale: materiale, docenza: docenza, costiMML: costiMML,
       food: food, personale: personale, costiCCC: costiCCC,
       utile: utile, meta: meta,
       spettaCCC: costiCCC + meta, spettaMML: costiMML + meta,
@@ -2141,46 +2252,34 @@
   function ricalcolaPrivato() {
     var e = leggiFormPrivato();
     var c = contoPrivatoDi(e);
+    var persone = c.persone;
 
-    el('pvContoTitolo').textContent = contoProvvisorio ? 'Il conto · provvisorio' : 'Il conto';
+    el('pvContoTitolo').textContent = 'Il conto';
     el('pvIncasso').textContent = euro(c.incasso);
     el('pvCostiMML').textContent = euro(c.costiMML);
     el('pvCostiCCC').textContent = euro(c.costiCCC);
 
-    // le righine sotto i campi: fanno vedere la moltiplicazione mentre scrivi,
-    // così una cifra sbagliata si nota subito
-    el('pvCalcMateriale').textContent = '× ' + e.ospiti + ' ospiti = ' + euro(c.materiale);
+    // le righine sotto i campi: la moltiplicazione mentre scrivi, cosi una cifra sbagliata si nota subito
+    el('pvCalcMateriale').textContent = '× ' + persone + ' persone = ' + euro(c.materiale);
     el('pvCalcDocenza').textContent = e.insegnanti + ' × ' + e.oreInsegnante + ' h × ' +
       euro(e.costoInsegnanteOra) + ' = ' + euro(c.docenza);
-    el('pvCalcFood').textContent = '× ' + e.ospiti + ' ospiti = ' + euro(c.food);
+    el('pvCalcFood').textContent = '× ' + persone + ' persone = ' + euro(c.food);
     el('pvCalcPersonale').textContent = personaleManuale
-      ? 'importo scelto da te · la fascia per ' + e.ospiti + ' ospiti sarebbe ' + euro(fasciaPersonale(e.ospiti))
-      : 'fascia ' + nomeFascia(e.ospiti) + ' = ' + euro(c.personale);
+      ? 'importo scelto da te · la fascia per ' + persone + ' persone sarebbe ' + euro(fasciaPersonale(persone))
+      : 'fascia ' + nomeFascia(persone) + ' = ' + euro(c.personale);
     el('btnUsaFascia').classList.toggle('nascosto', !personaleManuale);
-    el('btnUsaFascia').textContent = 'usa la fascia · ' + euro(fasciaPersonale(e.ospiti));
+    el('btnUsaFascia').textContent = 'usa la fascia · ' + euro(fasciaPersonale(persone));
 
-    // la giornata e gia salvata e dopo sono arrivate altre prenotazioni? lo dico, non cambio nulla
-    var pren = privatoCorrente && privatoCorrente.id && !privatoCorrente.daSalvare
-      ? (privatoCorrente.prenotati || 0) : 0;
-    var avvisaPren = pren && pren !== e.ospiti;
-    el('pvSuggerimentoPren').classList.toggle('nascosto', !avvisaPren);
-    if (avvisaPren) el('btnUsaPrenotati').textContent = 'ci sono ' + pren + ' prenotati · usa ' + pren + ' come ospiti';
-
-    // il QR ha contato delle presenze per questa data? lo propongo e basta
-    var daQR = presenzeQR[e.data];
-    var suggerisci = daQR && daQR !== e.ospiti;
-    el('pvSuggerimento').classList.toggle('nascosto', !suggerisci);
-    if (suggerisci) {
-      el('btnUsaQR').textContent = 'dal QR risultano ' + daQR + ' presenti · usa';
-    }
+    // chi incassa cosa: ognuno tiene il suo, si divide l utile, ognuno si riprende i costi
+    var incCCC = c.incasso - c.incassoMML, incMML = c.incassoMML;
+    var saldo = c.spettaCCC - incCCC;   // positivo: MML deve a CCC
+    var chi = Math.round(saldo * 100) === 0 ? 'Tra voi è tutto pari'
+      : (saldo > 0 ? 'MML deve a CCC ' : 'CCC deve a MML ') + euro(Math.abs(saldo));
+    c.incCCC = incCCC; c.incMML = incMML; c.saldo = saldo; c.chi = chi;
 
     el('pvConto').innerHTML =
-      voce('Incasso · ' + e.ospiti + ' × ' + euro(e.prezzoTesta), c.incasso - c.freelabIncasso - c.extraCCC - c.extraMML) +
-      (c.freelabIncasso ? voce('Cottura Freelab · ' + e.freelabCottura + ' × ' + euro(e.freelabPrezzo) + ' · MML', c.freelabIncasso) : '') +
-      VOCI_EXTRA.map(function (v) {
-        var n = Number(e[v.campo]) || 0;
-        return n ? voce(v.nome + ' · ' + n + ' × ' + euro(prezzoExtra(v.campo, e)) + ' · ' + v.incassa, n * prezzoExtra(v.campo, e)) : '';
-      }).join('') +
+      voce('Incassa CCC', incCCC) +
+      voce('Incassa MML', incMML) +
       voce('Costi MML', -c.costiMML) +
       voce('Costi CCC', -c.costiCCC) +
       '<div class="voce somma"><span>Utile</span><span>' + euro(c.utile) + '</span></div>' +
@@ -2191,12 +2290,14 @@
         '<div style="flex:1; background:rgba(242,167,159,.2); border-radius:12px; padding:12px 14px">' +
           '<div style="font-size:11px; color:var(--salmone)">MML</div>' +
           '<div style="font-family:Fraunces,serif; font-size:22px; font-weight:800">' + euroTondo(c.meta) + '</div></div>' +
-      '</div>';
+      '</div>' +
+      '<div style="margin-top:14px; font-weight:800">' + chi + '</div>';
 
     el('pvBoxCcc').innerHTML = boxPrivato(c.costiCCC, c.meta, c.spettaCCC, 'QUOTA CCC', 'var(--salvia)');
     el('pvBoxMml').innerHTML = boxPrivato(c.costiMML, c.meta, c.spettaMML, 'QUOTA MML', 'var(--salmone)');
 
     el('pvPerche').innerHTML = perchePrivato(c);
+    aggiornaTotaliBox();
   }
 
   function boxPrivato(costi, meta, totale, etichetta, colore) {
@@ -2211,46 +2312,34 @@
   }
 
   function perchePrivato(c) {
-    var riga = function (titolo, spiega, importo) {
-      return '<div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; ' +
-        'justify-content:space-between; background:rgba(242,167,159,.14); border-radius:12px; ' +
-        'padding:16px 18px; margin-bottom:12px">' +
-        '<span style="flex:1 1 360px; min-width:0; font-size:14px; line-height:1.5; color:#F0DAD5">' +
-        '<strong style="color:var(--panna)">' + titolo + ' · ' + euro(importo) + '</strong><br>' + spiega +
-        '</span><span style="flex:0 0 auto; text-align:right">' +
-        '<span style="display:block; font-size:11px; letter-spacing:.08em; color:var(--salmone)">CCC → MML</span>' +
-        '<strong style="font-family:Fraunces,serif; font-size:24px; color:var(--salmone)">' +
-        euro(importo) + '</strong></span></div>';
+    var riga = function (et, a, b2) {
+      return '<tr><td>' + et + '</td><td style="color:var(--salvia); text-align:right">' + a + '</td><td style="color:var(--salmone); text-align:right">' + b2 + '</td></tr>';
     };
-
-    return riga('Costi di MML', 'Materiale e insegnanti li ha messi lui, e glieli rimborsate dall’incasso.', c.costiMML) +
-      riga('Metà dell’utile', 'L’incasso è arrivato tutto a voi, quindi la sua metà ce l’avete in cassa.', c.meta) +
-      '<div style="margin-top:20px; padding-top:20px; border-top:2px solid rgba(251,243,238,.3); ' +
-      'display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between">' +
-      '<span style="font-size:15px; line-height:1.5; color:#F0DAD5">' +
-      euro(c.costiMML) + ' + ' + euro(c.meta) + ', quindi alla fine</span>' +
-      '<span style="text-align:right"><span style="display:block; font-size:13px; font-weight:600; color:var(--legno-chiaro)">' +
-      'CCC deve a MML</span><strong style="font-family:Fraunces,serif; font-size:36px">' +
-      euro(c.spettaMML) + '</strong></span></div>';
+    return '<div class="scorri"><table style="width:100%"><thead><tr><th></th><th style="text-align:right">CCC</th><th style="text-align:right">MML</th></tr></thead><tbody>' +
+      riga('Metà dell’utile', euro(c.meta), euro(c.meta)) +
+      riga('+ i suoi costi', euro(c.costiCCC), euro(c.costiMML)) +
+      riga('<strong>Gli spetta</strong>', '<strong>' + euro(c.spettaCCC) + '</strong>', '<strong>' + euro(c.spettaMML) + '</strong>') +
+      riga('− ha già incassato', euro(c.incCCC), euro(c.incMML)) +
+      '</tbody></table></div>' +
+      '<div style="margin-top:18px; padding-top:18px; border-top:2px solid rgba(251,243,238,.3); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">' +
+      '<span style="font-size:14px; color:#F0DAD5">Alla fine della giornata</span>' +
+      '<strong style="font-family:Fraunces,serif; font-size:30px">' + c.chi + '</strong></div>';
   }
 
   el('btnSalvaPrivato').addEventListener('click', function () {
     var e = leggiFormPrivato();
     if (!e.data) { avvisa('Serve la data.', true); return; }
+    var t = totaliBox();
     if (modoConferma) {
       var oggiLocale = new Date(); oggiLocale = oggiLocale.getFullYear() + '-' + String(oggiLocale.getMonth() + 1).padStart(2, '0') + '-' + String(oggiLocale.getDate()).padStart(2, '0');
       if (e.data > oggiLocale) { avvisa('Puoi confermare la giornata solo dal giorno stesso in poi.', true); return; }
-      if (!e.confermato) {
-        avvisa('Per confermare scrivi il numero definitivo di ospiti e l’incasso totale.', true);
-        el(el('pvOspiti').value.trim() === '' ? 'pvOspiti' : 'pvIncassoTot').focus();
-        return;
-      }
-      if (e.ospiti === 0 && e.incassoTotale > 0) { avvisa('Con 0 ospiti l’incasso deve essere 0.', true); return; }
+      if (e.ospiti === 0 && e.incassoTotale > 0) { avvisa('Hai scritto un importo per i paganti CCC ma 0 persone: controlla.', true); return; }
     }
+    var riepilogo = '\n\nCCC ' + t.nCCC + ' persone · ' + euro(t.eCCC) + '\nMML ' + t.nMML + ' persone · ' + euro(t.eMML) +
+      '\nTotale ' + euro(t.eCCC + t.eMML);
     var testoConferma = modoConferma
-      ? 'Confermo la giornata di ' + dataLunga(e.data) + '?\n\n' + e.ospiti + ' ospiti · incasso ' + euro(e.incassoTotale) +
-        '\n\nDa qui in poi entra nei resoconti.'
-      : 'Salvo la giornata di ' + dataLunga(e.data) + '?';
+      ? 'Confermo la giornata di ' + dataLunga(e.data) + '?' + riepilogo + '\n\nDa qui in poi entra nei resoconti.'
+      : 'Salvo la giornata di ' + dataLunga(e.data) + '?' + riepilogo;
     if (!confirm(testoConferma)) return;
     var doppia = giornataStessoGiorno(e.data);
     var forza = false;
@@ -2263,7 +2352,13 @@
     chiama({ azione: 'salvaPrivato', evento: e, forza: forza })
       .then(function (r) {
         avvisa(modoConferma ? 'Giornata confermata.' : 'Giornata salvata.');
+        var pren = privatoCorrente && privatoCorrente.prenotazioni;
         privatoCorrente = r.evento;
+        if (pren) { privatoCorrente.prenotazioni = pren; privatoCorrente.prenotati = pren.reduce(function (x, y) { return x + y.posti; }, 0); }
+        impostaModoConferma(privatoCorrente);
+        el('btnEliminaPrivato').classList.remove('nascosto');
+        preparaBox(privatoCorrente);
+        ricalcolaPrivato();
         caricaPrivati();
       })
       .catch(function (err) { avvisa('Non salvata: ' + err.message, true); })
@@ -2293,6 +2388,9 @@
     if (d) el('pvDoppiaTesto').textContent = 'Per ' + dataLunga(d.data) + ' esiste già una giornata.';
   }
   el('pvData').addEventListener('change', controllaDoppia);
+  el('pvData').addEventListener('change', function () {
+    if (privatoCorrente && !privatoCorrente.id) { privatoCorrente.data = el('pvData').value; preparaBox(privatoCorrente); ricalcolaPrivato(); }
+  });
   el('pvData').addEventListener('input', controllaDoppia);
 
   /* ------------------------------------------------ modifica data di una giornata */
@@ -3046,8 +3144,8 @@
     el('rsClProv').textContent = cl.daConfermare ? '+ ' + cl.daConfermare + ' prenotati da confermare' : '';
     el('rsClGratis').textContent = cl.freelabGratis;
     el('rsClCottura').textContent = cl.freelabCottura;
-    el('rsClExtra').textContent = (cl.extra || []).filter(function (x) { return x.persone; })
-      .map(function (x) { return x.nome + ' ' + x.persone; }).join(' · ');
+    el('rsClExtra').textContent = (cl.buoniCCC ? ['Buoni CCC Ecommerce ' + cl.buoniCCC + ' (tra i paganti)'] : []).concat((cl.extra || []).filter(function (x) { return x.persone; })
+      .map(function (x) { return x.nome + ' ' + x.persone; })).join(' · ');
     el('rsClSub').textContent = 'Merc. ' + (cl.mercoledi || 0) + ' · Weekend ' + (cl.weekend || 0) + (cl.altri ? ' · Altri ' + cl.altri : '');
     var gConf = { tot: 0, m: 0, w: 0 };
     (r.privati || []).forEach(function (e) {
@@ -3343,7 +3441,7 @@
 
     var pt = r.privatiTotali, cn = r.conto;
     var mmlPriv = pt.incassoMML !== undefined ? pt.incassoMML : (pt.freelabIncasso || 0);   // Freelab, cristallina, gift card e buono MM
-    var baseSuperb = pt.incasso - mmlPriv - (pt.extraCCC || 0);   // le commissioni solo sui paganti delle email
+    var baseSuperb = pt.incasso - mmlPriv - (pt.extraCCC || 0) - (pt.buoniCCCIncasso || 0);   // commissioni solo sui paganti Superb
     var sponsor = numero('rsSponsorGiorno') * numero('rsSponsorGiorni');
     var superb = baseSuperb * numero('rsSuperbPerc') / 100;
 
@@ -3383,8 +3481,10 @@
 
     var privatiCCC = pt.incasso - mmlPriv - (pt.extraCCC || 0);
     var pivaCCC = incCCC - privatiCCC - (pt.extraCCC || 0), pivaMML = incMML - mmlPriv;
-    var incassa = [['Privati · paganti brunch, merenda e aperitivo', 'CCC', privatiCCC],
-                   ['P. IVA', 'MML', pivaMML]];
+    var buoniCCC = pt.buoniCCCIncasso || 0;
+    var incassa = [['Privati · paganti Superb', 'CCC', privatiCCC - buoniCCC]];
+    if (buoniCCC) incassa.push(['Buoni CCC Ecommerce · ' + ((r.clienti && r.clienti.buoniCCC) || 0) + ' \u00d7 ' + euro(55), 'CCC', buoniCCC]);
+    incassa.push(['P. IVA', 'MML', pivaMML]);
     if (Math.round(pivaCCC * 100) !== 0) incassa.push(['P. IVA · consumazioni', 'CCC', pivaCCC]);
     incassa.push(['Freelab a pagamento · ' + ((r.clienti && r.clienti.freelabCottura) || 0) + ' \u00d7 cottura', 'MML', pt.freelabIncasso || 0]);
     ((r.clienti && r.clienti.extra) || []).forEach(function (x) {
@@ -3669,8 +3769,8 @@
       if (bx[2]) doc.text(bx[2], x + 4, y + 19.5);
     });
     y += 30;
-    var extraPdf = (cl.extra || []).filter(function (x) { return x.persone; })
-      .map(function (x) { return x.nome + ' ' + x.persone + ' (' + x.incassa + ')'; }).join(' · ');
+    var extraPdf = (cl.buoniCCC ? ['Buoni CCC Ecommerce ' + cl.buoniCCC + ' (CCC, tra i paganti)'] : []).concat((cl.extra || []).filter(function (x) { return x.persone; })
+      .map(function (x) { return x.nome + ' ' + x.persone + ' (' + x.incassa + ')'; })).join(' · ');
     if (extraPdf) {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, VINO);
       doc.text('Altre voci: ' + extraPdf, M, y - 3);
@@ -3710,17 +3810,20 @@
     (r.privati || []).forEach(function (e) {
       var det = (e.pagantiBrunch || e.pagantiAperitivo)
         ? [e.pagantiBrunch ? e.pagantiBrunch + ' brunch' : '', e.pagantiAperitivo ? e.pagantiAperitivo + ' aperitivo' : ''].filter(String).join(' + ')
-        : e.ospiti + ' paganti';
-      righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Privati · ' + det, 'CCC', e.ospiti,
-        eur2(e.conto.incasso - (e.conto.incassoMML !== undefined ? e.conto.incassoMML : (e.conto.freelabIncasso || 0)) - (e.conto.extraCCC || 0)),
+        : (e.ospiti - Math.min(Number(e.buoniCCC) || 0, e.ospiti)) + ' paganti Superb';
+      var bCCC = Math.min(Number(e.buoniCCC) || 0, e.ospiti), bInc = e.conto.buoniCCCIncasso || 0;
+      righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Privati · ' + det, 'CCC', e.ospiti - bCCC,
+        eur2(e.conto.incasso - (e.conto.incassoMML !== undefined ? e.conto.incassoMML : (e.conto.freelabIncasso || 0)) - (e.conto.extraCCC || 0) - bInc),
         'CCC ' + eur2(e.conto.costiCCC) + ' · MML ' + eur2(e.conto.costiMML)] });
+      if (bCCC) righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Buoni CCC Ecommerce', 'CCC', bCCC, eur2(bInc), '-'] });
       if (e.freelabCottura || e.freelabGratis) {
         righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Freelab · ' + (e.freelabCottura || 0) + ' a pagamento, ' + (e.freelabGratis || 0) + ' gratuiti', 'MML',
           (e.freelabCottura || 0) + (e.freelabGratis || 0), eur2(e.conto.freelabIncasso || 0), '-'] });
       }
       VOCI_EXTRA.forEach(function (x) {
         var n = Number(e[x.campo]) || 0;
-        if (n) righeEv.push({ d: e.data, riga: [dataIt(e.data), x.nome, x.incassa, n, eur2(n * prezzoExtra(x.campo, e)), '-'] });
+        var imp = e.voci && e.voci[x.campo] ? Number(e.voci[x.campo].eur) || 0 : n * prezzoExtra(x.campo, e);
+        if (n) righeEv.push({ d: e.data, riga: [dataIt(e.data), x.nome, x.incassa, n, eur2(imp), '-'] });
       });
     });
     (r.aziendali || []).forEach(function (e) {
