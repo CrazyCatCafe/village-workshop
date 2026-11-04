@@ -1960,14 +1960,22 @@
     var riga = function (sx, dx) {
       return '<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid rgba(251,243,238,.1); font-size:14px">' + sx + dx + '</div>';
     };
-    // il controllo: i paganti CCC li prendo dalle email, il modulo serve a vedere se tornano
-    var parti = [['superb', 'Superb'], ['ecommerce', 'Ecommerce'], ['brunch', 'Brunch'], ['aperitivo', 'Aperitivo']]
-      .filter(function (x) { return v[x[0]] !== undefined; })
-      .map(function (x) { return x[1] + ' ' + v[x[0]]; }).join(' · ');
+    // i paganti CCC: fa fede il modulo, perche Daniele e li. Le email restano solo come confronto
+    var campo = function (attr, val, prezzo) {
+      return '<span style="display:flex; align-items:center; gap:8px; white-space:nowrap"><input type="text" inputmode="numeric" ' + attr + ' data-prezzo="' + prezzo +
+        '" value="' + val + '" style="width:56px; text-align:center"><strong data-tot>' + euro(val * prezzo) + '</strong></span>';
+    };
     var torna = r.pagantiModulo === r.prenotatiEmail;
-    var h = testa + riga('<span>Paganti CCC nel modulo<div style="font-size:12px; color:var(--tenue)">' + parti + '</div></span>',
-      '<strong style="white-space:nowrap; color:' + (torna ? 'var(--salvia)' : 'var(--salmone)') + '">' + r.pagantiModulo +
-      (torna ? ' ✓ tornano con le email' : ' ⚠ dalle email: ' + r.prenotatiEmail) + '</strong>');
+    var h = testa + '<div style="font-size:13px; padding:2px 0 6px; color:' + (torna ? 'var(--salvia)' : 'var(--salmone)') + '">' +
+      (torna ? '✓ Paganti come nelle email: ' + r.prenotatiEmail
+             : '⚠ Nel modulo ' + r.pagantiModulo + ' paganti, dalle email erano ' + r.prenotatiEmail + ' · vale il modulo') + '</div>';
+    var pp = r.prezziPaganti || {};
+    [['superb', 'Superb'], ['ecommerce', 'Ecommerce'], ['brunch', 'Brunch'], ['aperitivo', 'Aperitivo']]
+      .filter(function (x) { return v[x[0]] !== undefined; })
+      .forEach(function (x) {
+        h += riga('<span>' + x[1] + ' · ' + euro(pp[x[0]] || 55) + ' <span class="pastiglia" style="font-size:10px; padding:1px 7px">CCC</span></span>',
+          campo('data-pag="' + x[0] + '"', v[x[0]], pp[x[0]] || 55));
+      });
     // le voci da importare: le metto in campi che puoi correggere
     var pz = r.prezzi || {};
     var voci = [{ campo: 'decorazione', id: 'pvDecorazione', nome: 'Decorazione', chi: 'CCC' },
@@ -1979,25 +1987,33 @@
     voci.forEach(function (x) {
       x.prezzo = x.campo === 'cottura' ? (numero('pvFreelabPrezzo') || 10) : (Number(pz[x.campo]) || prezzoExtra(x.campo));
       h += riga('<span>' + x.nome + ' · ' + euro(x.prezzo) + ' <span class="pastiglia" style="font-size:10px; padding:1px 7px">' + x.chi + '</span></span>',
-        '<span style="display:flex; align-items:center; gap:8px; white-space:nowrap"><input type="text" inputmode="numeric" data-mod="' + x.id + '" data-prezzo="' + x.prezzo +
-        '" value="' + v[x.campo] + '" style="width:56px; text-align:center"><strong data-modtot="' + x.id + '">' + euro(v[x.campo] * x.prezzo) + '</strong></span>');
+        campo('data-mod="' + x.id + '"', v[x.campo], x.prezzo));
     });
-    if (voci.length) {
+    {
       h += '<button type="button" class="azione piena" id="btnUsaModulo" style="width:100%; margin-top:12px">Usa questi numeri</button>' +
         '<div id="pvModuloFatto" style="font-size:12px; color:var(--salvia); margin-top:6px; text-align:center"></div>';
     }
     box.innerHTML = h + problemi;
-    box.querySelectorAll('input[data-mod]').forEach(function (i) {
+    var intero = function (i) { return Math.max(0, Math.round(Number(String(i.value).replace(',', '.')) || 0)); };
+    box.querySelectorAll('input[data-prezzo]').forEach(function (i) {
       i.addEventListener('input', function () {
-        var n = Math.max(0, Math.round(Number(String(i.value).replace(',', '.')) || 0));
-        box.querySelector('[data-modtot="' + i.dataset.mod + '"]').textContent = euro(n * Number(i.dataset.prezzo));
+        i.parentNode.querySelector('[data-tot]').textContent = euro(intero(i) * Number(i.dataset.prezzo));
       });
     });
     var b = el('btnUsaModulo');
     if (b) b.addEventListener('click', function () {
-      box.querySelectorAll('input[data-mod]').forEach(function (i) {
-        el(i.dataset.mod).value = Math.max(0, Math.round(Number(String(i.value).replace(',', '.')) || 0));
-      });
+      box.querySelectorAll('input[data-mod]').forEach(function (i) { el(i.dataset.mod).value = intero(i); });
+      // paganti e incasso CCC dal modulo
+      var pag = box.querySelectorAll('input[data-pag]');
+      if (pag.length) {
+        var n = 0, inc = 0, perCampo = {};
+        pag.forEach(function (i) { var k = intero(i); perCampo[i.dataset.pag] = k; n += k; inc += k * Number(i.dataset.prezzo); });
+        el('pvOspiti').value = n;
+        if (modoConferma) el('pvIncassoTot').value = Math.round(inc * 100) / 100;
+        else el('pvPrezzo').value = n ? Math.round(inc / n * 100) / 100 : 0;
+        if (perCampo.brunch !== undefined) el('pvPagantiBrunch').value = perCampo.brunch;
+        if (perCampo.aperitivo !== undefined) el('pvPagantiAperitivo').value = perCampo.aperitivo;
+      }
       ricalcolaPrivato();
       el('pvModuloFatto').textContent = 'Fatto: i numeri sono nella giornata. Ricordati di salvarla.';
     });
