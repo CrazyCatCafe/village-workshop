@@ -463,6 +463,7 @@
                 <span id="pvDoppiaTesto"></span>
                 <button type="button" class="azione" id="btnApriDoppia" style="min-height:34px; padding:0 12px; font-size:13px; margin-top:8px">Apri quella esistente</button>
               </div>
+              <div id="pvModulo" class="nascosto" style="border:1px dashed var(--legno-chiaro); border-radius:14px; padding:12px 14px; margin-bottom:16px"></div>
               <div class="campo" style="margin-bottom:4px">
                 <label for="pvOspiti">Paganti in tutto</label>
                 <input type="text" id="pvOspiti" inputmode="numeric" style="width:90px">
@@ -489,6 +490,24 @@
                 <div class="campo" style="margin-bottom:4px">
                   <label for="pvFreelabPrezzo">Cottura Freelab · € a testa</label>
                   <input type="text" id="pvFreelabPrezzo" inputmode="decimal" style="width:90px" placeholder="10">
+                </div>
+              </div>
+              <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:8px">
+                <div class="campo" style="margin-bottom:4px">
+                  <label for="pvDecorazione">Decorazione · CCC</label>
+                  <input type="text" id="pvDecorazione" inputmode="numeric" style="width:90px" placeholder="0">
+                </div>
+                <div class="campo" style="margin-bottom:4px">
+                  <label for="pvCristallina">Freelab cristallina · MML</label>
+                  <input type="text" id="pvCristallina" inputmode="numeric" style="width:90px" placeholder="0">
+                </div>
+                <div class="campo" style="margin-bottom:4px">
+                  <label for="pvGiftcard">Gift card MM</label>
+                  <input type="text" id="pvGiftcard" inputmode="numeric" style="width:90px" placeholder="0">
+                </div>
+                <div class="campo" style="margin-bottom:4px">
+                  <label for="pvBuono">Buono MM</label>
+                  <input type="text" id="pvBuono" inputmode="numeric" style="width:90px" placeholder="0">
                 </div>
               </div>
               <div id="pvSuggerimentoPren" class="nascosto" style="text-align:right; margin-bottom:8px">
@@ -779,6 +798,7 @@
           <div class="tessera" style="flex:1 1 150px; background:var(--legno)"><div class="eticchetta">Freelab gratuiti</div><div class="cifra" id="rsClGratis">0</div></div>
           <div class="tessera spicca" style="flex:1 1 150px"><div class="eticchetta">Freelab a pagamento</div><div class="cifra" id="rsClCottura">0</div></div>
         </div>
+        <div id="rsClExtra" style="font-size:14px; margin:-4px 0 14px; color:var(--tenue)"></div>
         <div class="scorri" style="background:rgba(251,243,238,.05); border-radius:14px; padding:6px 4px">
           <table><thead><tr><th>Paganti per formula</th><th>Clienti</th></tr></thead><tbody id="rsClFormule"></tbody></table>
         </div>
@@ -1704,8 +1724,21 @@
     pvFood: 'foodPersona',
     pvPagantiBrunch: 'pagantiBrunch', pvPagantiAperitivo: 'pagantiAperitivo',
     pvFreelabGratis: 'freelabGratis', pvFreelabCottura: 'freelabCottura', pvFreelabPrezzo: 'freelabPrezzo',
+    pvDecorazione: 'decorazione', pvCristallina: 'cristallina', pvGiftcard: 'giftcard', pvBuono: 'buono',
     pvNote: 'note'
   };
+  // le voci che arrivano dal modulo di Daniele: chi incassa e prezzo di partenza (il server manda quelli delle Impostazioni)
+  var VOCI_EXTRA = [
+    { campo: 'decorazione', nome: 'Decorazione', incassa: 'CCC', prezzo: 45 },
+    { campo: 'cristallina', nome: 'Freelab cristallina', incassa: 'MML', prezzo: 20 },
+    { campo: 'giftcard', nome: 'Gift card MM', incassa: 'MML', prezzo: 55 },
+    { campo: 'buono', nome: 'Buono MM', incassa: 'MML', prezzo: 55 }
+  ];
+  function prezzoExtra(campo, e) {
+    var pz = (e && e.prezziExtra) || (privatoCorrente && privatoCorrente.prezziExtra) || {};
+    var v = VOCI_EXTRA.filter(function (x) { return x.campo === campo; })[0];
+    return Number(pz[campo]) || (v ? v.prezzo : 0);
+  }
   var TESTO_PV = ['data', 'note'];
 
   el('mesePrivati').addEventListener('change', function () { eventiPrivati = []; disegnaElencoPrivati(); caricaPrivati(); });
@@ -1890,6 +1923,84 @@
     el('schedaPrivato').classList.remove('nascosto');
     if (vistaCorrente !== 'giorno') passo({ s: 'app', modo: modo, vista: 'privati', scheda: true });
     ricalcolaPrivato();
+    caricaModulo(e.data);
+  }
+
+  /* ---------- il modulo di Daniele: lo leggo, lo confronto con le email, i numeri li metti tu */
+  var moduloChiesto = '';
+  function caricaModulo(data) {
+    var box = el('pvModulo');
+    moduloChiesto = data || '';
+    box.classList.add('nascosto');
+    box.innerHTML = '';
+    if (!data || data > oggiISO()) return;   // per un giorno che deve ancora venire non c e niente da leggere
+    box.classList.remove('nascosto');
+    box.innerHTML = '<div style="font-size:13px; color:var(--tenue)">Leggo il modulo di Daniele…</div>';
+    chiama({ azione: 'modulo', data: data }).then(function (r) {
+      if (moduloChiesto !== data) return;   // nel frattempo hai aperto un altra giornata
+      disegnaModulo(r);
+    }).catch(function (err) {
+      if (moduloChiesto !== data) return;
+      box.innerHTML = '<div style="font-size:13px; color:var(--salmone)">Modulo di Daniele: ' + err.message + '</div>';
+    });
+  }
+
+  function disegnaModulo(r) {
+    var box = el('pvModulo');
+    var testa = '<div style="font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--legno-chiaro); margin-bottom:8px">Dal modulo di Daniele' +
+      (r.moduli && r.moduli.length ? ' · ' + r.moduli.map(function (m) { return m.tipo + (m.quando ? ' ' + m.quando : ''); }).join(' + ') : '') + '</div>';
+    var problemi = (r.problemi || []).map(function (t) {
+      return '<div style="font-size:13px; color:var(--salmone); margin-top:6px">' + t + '</div>';
+    }).join('');
+    if (!r.trovato) {
+      box.innerHTML = testa + '<div style="font-size:13px; color:var(--tenue)">Per questo giorno Daniele non ha ancora compilato il modulo.</div>' + problemi;
+      return;
+    }
+    var v = r.valori || {};
+    var riga = function (sx, dx) {
+      return '<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid rgba(251,243,238,.1); font-size:14px">' + sx + dx + '</div>';
+    };
+    // il controllo: i paganti CCC li prendo dalle email, il modulo serve a vedere se tornano
+    var parti = [['superb', 'Superb'], ['ecommerce', 'Ecommerce'], ['brunch', 'Brunch'], ['aperitivo', 'Aperitivo']]
+      .filter(function (x) { return v[x[0]] !== undefined; })
+      .map(function (x) { return x[1] + ' ' + v[x[0]]; }).join(' · ');
+    var torna = r.pagantiModulo === r.prenotatiEmail;
+    var h = testa + riga('<span>Paganti CCC nel modulo<div style="font-size:12px; color:var(--tenue)">' + parti + '</div></span>',
+      '<strong style="white-space:nowrap; color:' + (torna ? 'var(--salvia)' : 'var(--salmone)') + '">' + r.pagantiModulo +
+      (torna ? ' ✓ tornano con le email' : ' ⚠ dalle email: ' + r.prenotatiEmail) + '</strong>');
+    // le voci da importare: le metto in campi che puoi correggere
+    var pz = r.prezzi || {};
+    var voci = [{ campo: 'decorazione', id: 'pvDecorazione', nome: 'Decorazione', chi: 'CCC' },
+                { campo: 'cottura', id: 'pvFreelabCottura', nome: 'Freelab cottura', chi: 'MML' },
+                { campo: 'cristallina', id: 'pvCristallina', nome: 'Freelab cristallina', chi: 'MML' },
+                { campo: 'giftcard', id: 'pvGiftcard', nome: 'Gift card MM', chi: 'MML' },
+                { campo: 'buono', id: 'pvBuono', nome: 'Buono MM', chi: 'MML' }]
+      .filter(function (x) { return v[x.campo] !== undefined; });
+    voci.forEach(function (x) {
+      x.prezzo = x.campo === 'cottura' ? (numero('pvFreelabPrezzo') || 10) : (Number(pz[x.campo]) || prezzoExtra(x.campo));
+      h += riga('<span>' + x.nome + ' · ' + euro(x.prezzo) + ' <span class="pastiglia" style="font-size:10px; padding:1px 7px">' + x.chi + '</span></span>',
+        '<span style="display:flex; align-items:center; gap:8px; white-space:nowrap"><input type="text" inputmode="numeric" data-mod="' + x.id + '" data-prezzo="' + x.prezzo +
+        '" value="' + v[x.campo] + '" style="width:56px; text-align:center"><strong data-modtot="' + x.id + '">' + euro(v[x.campo] * x.prezzo) + '</strong></span>');
+    });
+    if (voci.length) {
+      h += '<button type="button" class="azione piena" id="btnUsaModulo" style="width:100%; margin-top:12px">Usa questi numeri</button>' +
+        '<div id="pvModuloFatto" style="font-size:12px; color:var(--salvia); margin-top:6px; text-align:center"></div>';
+    }
+    box.innerHTML = h + problemi;
+    box.querySelectorAll('input[data-mod]').forEach(function (i) {
+      i.addEventListener('input', function () {
+        var n = Math.max(0, Math.round(Number(String(i.value).replace(',', '.')) || 0));
+        box.querySelector('[data-modtot="' + i.dataset.mod + '"]').textContent = euro(n * Number(i.dataset.prezzo));
+      });
+    });
+    var b = el('btnUsaModulo');
+    if (b) b.addEventListener('click', function () {
+      box.querySelectorAll('input[data-mod]').forEach(function (i) {
+        el(i.dataset.mod).value = Math.max(0, Math.round(Number(String(i.value).replace(',', '.')) || 0));
+      });
+      ricalcolaPrivato();
+      el('pvModuloFatto').textContent = 'Fatto: i numeri sono nella giornata. Ricordati di salvarla.';
+    });
   }
 
   /** I pulsanti in alto e in basso nella giornata sono uno lo specchio dell altro. */
@@ -1986,7 +2097,13 @@
   /** Stessa formula del server, per vedere i numeri mentre scrivi. */
   function contoPrivatoDi(e) {
     var freelabIncasso = (Number(e.freelabCottura) || 0) * (Number(e.freelabPrezzo) || 0);
-    var incasso = e.ospiti * e.prezzoTesta + freelabIncasso;
+    var extraCCC = 0, extraMML = 0;
+    VOCI_EXTRA.forEach(function (v) {
+      var x = (Number(e[v.campo]) || 0) * prezzoExtra(v.campo, e);
+      if (v.incassa === 'CCC') extraCCC += x; else extraMML += x;
+    });
+    var incassoMML = freelabIncasso + extraMML;
+    var incasso = e.ospiti * e.prezzoTesta + freelabIncasso + extraCCC + extraMML;
     var materiale = e.ospiti * e.materialePersona;
     var docenza = e.insegnanti * e.oreInsegnante * e.costoInsegnanteOra;
     var costiMML = materiale + docenza;
@@ -1996,7 +2113,8 @@
     var utile = incasso - costiMML - costiCCC;
     var meta = utile / 2;
     return {
-      incasso: incasso, freelabIncasso: freelabIncasso, materiale: materiale, docenza: docenza, costiMML: costiMML,
+      incasso: incasso, freelabIncasso: freelabIncasso, extraCCC: extraCCC, extraMML: extraMML,
+      incassoMML: incassoMML, incassoCCC: incasso - incassoMML, materiale: materiale, docenza: docenza, costiMML: costiMML,
       food: food, personale: personale, costiCCC: costiCCC,
       utile: utile, meta: meta,
       spettaCCC: costiCCC + meta, spettaMML: costiMML + meta,
@@ -2041,8 +2159,12 @@
     }
 
     el('pvConto').innerHTML =
-      voce('Incasso · ' + e.ospiti + ' × ' + euro(e.prezzoTesta), c.incasso - c.freelabIncasso) +
-      (c.freelabIncasso ? voce('Cottura Freelab · ' + e.freelabCottura + ' × ' + euro(e.freelabPrezzo), c.freelabIncasso) : '') +
+      voce('Incasso · ' + e.ospiti + ' × ' + euro(e.prezzoTesta), c.incasso - c.freelabIncasso - c.extraCCC - c.extraMML) +
+      (c.freelabIncasso ? voce('Cottura Freelab · ' + e.freelabCottura + ' × ' + euro(e.freelabPrezzo) + ' · MML', c.freelabIncasso) : '') +
+      VOCI_EXTRA.map(function (v) {
+        var n = Number(e[v.campo]) || 0;
+        return n ? voce(v.nome + ' · ' + n + ' × ' + euro(prezzoExtra(v.campo, e)) + ' · ' + v.incassa, n * prezzoExtra(v.campo, e)) : '';
+      }).join('') +
       voce('Costi MML', -c.costiMML) +
       voce('Costi CCC', -c.costiCCC) +
       '<div class="voce somma"><span>Utile</span><span>' + euro(c.utile) + '</span></div>' +
@@ -2908,6 +3030,8 @@
     el('rsClProv').textContent = cl.daConfermare ? '+ ' + cl.daConfermare + ' prenotati da confermare' : '';
     el('rsClGratis').textContent = cl.freelabGratis;
     el('rsClCottura').textContent = cl.freelabCottura;
+    el('rsClExtra').textContent = (cl.extra || []).filter(function (x) { return x.persone; })
+      .map(function (x) { return x.nome + ' ' + x.persone; }).join(' · ');
     el('rsClSub').textContent = 'Merc. ' + (cl.mercoledi || 0) + ' · Weekend ' + (cl.weekend || 0) + (cl.altri ? ' · Altri ' + cl.altri : '');
     var gConf = { tot: 0, m: 0, w: 0 };
     (r.privati || []).forEach(function (e) {
@@ -3202,7 +3326,8 @@
     var r = resoconto;
 
     var pt = r.privatiTotali, cn = r.conto;
-    var baseSuperb = pt.incasso - (pt.freelabIncasso || 0);   // le commissioni solo sui paganti, non sul Freelab
+    var mmlPriv = pt.incassoMML !== undefined ? pt.incassoMML : (pt.freelabIncasso || 0);   // Freelab, cristallina, gift card e buono MM
+    var baseSuperb = pt.incasso - mmlPriv - (pt.extraCCC || 0);   // le commissioni solo sui paganti delle email
     var sponsor = numero('rsSponsorGiorno') * numero('rsSponsorGiorni');
     var superb = baseSuperb * numero('rsSuperbPerc') / 100;
 
@@ -3240,12 +3365,15 @@
     var qCCC = meta + spCCC, qMML = meta + spMML;
     var saldo = qCCC - incCCC;   // positivo: MML deve a CCC
 
-    var privatiCCC = pt.incasso - (pt.freelabIncasso || 0);
-    var pivaCCC = incCCC - privatiCCC, pivaMML = incMML - (pt.freelabIncasso || 0);
+    var privatiCCC = pt.incasso - mmlPriv - (pt.extraCCC || 0);
+    var pivaCCC = incCCC - privatiCCC - (pt.extraCCC || 0), pivaMML = incMML - mmlPriv;
     var incassa = [['Privati · paganti brunch, merenda e aperitivo', 'CCC', privatiCCC],
                    ['P. IVA', 'MML', pivaMML]];
     if (Math.round(pivaCCC * 100) !== 0) incassa.push(['P. IVA · consumazioni', 'CCC', pivaCCC]);
     incassa.push(['Freelab a pagamento · ' + ((r.clienti && r.clienti.freelabCottura) || 0) + ' \u00d7 cottura', 'MML', pt.freelabIncasso || 0]);
+    ((r.clienti && r.clienti.extra) || []).forEach(function (x) {
+      if (x.persone) incassa.push([x.nome + ' · ' + x.persone + ' \u00d7 ' + euro(x.prezzo), x.incassa, x.incasso]);
+    });
 
     resoconto.vivo = {
       righe: righe, totale: totale, saldo: saldo,
@@ -3267,7 +3395,7 @@
       : (saldo > 0 ? 'MML paga a CCC ' : 'CCC paga a MML ') + euro(Math.abs(saldo));
     el('rsConto').innerHTML =
       '<thead><tr><th></th><th>CCC</th><th>MML</th><th>Totale</th></tr></thead><tbody>' +
-      riga('Incassato', 'CCC: privati · MML: P. IVA e Freelab', euro(incCCC), euro(incMML), euro(incCCC + incMML)) +
+      riga('Incassato', 'CCC: privati e decorazione · MML: P. IVA, Freelab, gift card e buoni', euro(incCCC), euro(incMML), euro(incCCC + incMML)) +
       riga('Spese pagate', '', '− ' + euro(spCCC), '− ' + euro(spMML), '− ' + euro(spCCC + spMML)) +
       '<tr style="font-weight:700"><td>Utile da dividere</td><td></td><td></td><td>' + euro(utile) + '</td></tr>' +
       riga('Metà dell’utile', '', euro(meta), euro(meta), euro(utile)) +
@@ -3525,6 +3653,13 @@
       if (bx[2]) doc.text(bx[2], x + 4, y + 19.5);
     });
     y += 30;
+    var extraPdf = (cl.extra || []).filter(function (x) { return x.persone; })
+      .map(function (x) { return x.nome + ' ' + x.persone + ' (' + x.incassa + ')'; }).join(' · ');
+    if (extraPdf) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc, VINO);
+      doc.text('Altre voci: ' + extraPdf, M, y - 3);
+      y += 5;
+    }
     if (cl.daConfermare) {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, GRIGIO);
       doc.text('Prenotati da confermare, non compresi: ' + cl.daConfermare, M, y - 4);
@@ -3560,12 +3695,17 @@
       var det = (e.pagantiBrunch || e.pagantiAperitivo)
         ? [e.pagantiBrunch ? e.pagantiBrunch + ' brunch' : '', e.pagantiAperitivo ? e.pagantiAperitivo + ' aperitivo' : ''].filter(String).join(' + ')
         : e.ospiti + ' paganti';
-      righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Privati · ' + det, 'CCC', e.ospiti, eur2(e.conto.incasso - (e.conto.freelabIncasso || 0)),
+      righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Privati · ' + det, 'CCC', e.ospiti,
+        eur2(e.conto.incasso - (e.conto.incassoMML !== undefined ? e.conto.incassoMML : (e.conto.freelabIncasso || 0)) - (e.conto.extraCCC || 0)),
         'CCC ' + eur2(e.conto.costiCCC) + ' · MML ' + eur2(e.conto.costiMML)] });
       if (e.freelabCottura || e.freelabGratis) {
         righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Freelab · ' + (e.freelabCottura || 0) + ' a pagamento, ' + (e.freelabGratis || 0) + ' gratuiti', 'MML',
           (e.freelabCottura || 0) + (e.freelabGratis || 0), eur2(e.conto.freelabIncasso || 0), '-'] });
       }
+      VOCI_EXTRA.forEach(function (x) {
+        var n = Number(e[x.campo]) || 0;
+        if (n) righeEv.push({ d: e.data, riga: [dataIt(e.data), x.nome, x.incassa, n, eur2(n * prezzoExtra(x.campo, e)), '-'] });
+      });
     });
     (r.aziendali || []).forEach(function (e) {
       righeEv.push({ d: e.data, riga: [dataIt(e.data), 'P. IVA · ' + (e.azienda || '-'), 'MML', e.persone, eur2(e.conto.inManoMML), '-'] });
