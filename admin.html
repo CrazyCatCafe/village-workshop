@@ -294,6 +294,23 @@
     .ev-dw { font-size: 10px; letter-spacing: 0; }
     .ev-r { font-size: 15px; }
   }
+  /* tabella Eventi */
+  .ev-tab { width:100%; border-collapse:collapse; min-width:860px }
+  .ev-tab th { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--legno-chiaro); text-align:center; padding:10px 6px; border-bottom:1px solid rgba(251,243,238,.2); vertical-align:bottom; font-weight:700 }
+  .ev-tab th small { display:block; font-size:10px; letter-spacing:0; text-transform:none; margin-top:2px }
+  .ev-tab th.l, .ev-tab td.l { text-align:left }
+  .ev-tab th.r, .ev-tab td.r { text-align:right; white-space:nowrap }
+  .ev-tab .cc { color:#C9E0C6 } .ev-tab .mm { color:var(--salmone) }
+  .ev-tab td { padding:9px 6px; border-bottom:1px solid rgba(251,243,238,.08); text-align:center; font-weight:700; font-size:15px }
+  .ev-tab td .s { display:block; font-size:11px; font-weight:400; color:var(--tenue) }
+  .ev-tab .z { color:rgba(251,243,238,.28); font-weight:400 } .ev-tab .v { color:rgba(251,243,238,.22); font-weight:400 }
+  .ev-tab .pv { color:var(--legno-chiaro); font-style:italic }
+  .ev-tab .st-ok { font-size:11px; color:var(--salvia); white-space:nowrap } .ev-tab .st-pr { font-size:11px; color:var(--legno-chiaro); white-space:nowrap }
+  .ev-tab tr.oggi td:first-child { box-shadow:inset 3px 0 0 #E6B422 }
+  .ev-tab tr.tot td { border:0; color:var(--legno-chiaro); padding-top:14px }
+  .ev-tab .ev-az { font-size:13px; text-align:left; max-width:120px }
+  .ev-tab .ev-az b { display:block }
+  .ev-tab .apri { min-height:30px; padding:0 12px; font-size:12px }
 </style>
 </head>
 <body>
@@ -369,14 +386,13 @@
           <button type="button" class="azione" id="meseEventiSucc" aria-label="Mese successivo" style="min-height:36px; padding:0 14px">›</button>
         </div>
       </div>
-      <div class="ev-k4" id="evContatori"></div>
-      <div class="ev-leg">
-        <span><i style="background:#7a3550"></i>Privati</span>
-        <span><i style="background:#3f5e4e"></i>P. IVA (paga MML)</span>
-        <span style="color:#A9C9A6">✓ Confermato</span>
-        <span style="color:#E6B422">▢ oggi</span>
+      <div id="evAltroGiorno" class="nascosto" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 14px">
+        <span style="font-size:13px; color:var(--tenue)">Evento in un altro giorno:</span>
+        <input type="date" id="evDataAltro" style="width:auto">
+        <button type="button" class="azione" id="btnEvAltro">Apri</button>
       </div>
-      <div class="ev-cal" id="evGriglia"></div>
+      <div class="carta scorri" style="padding:6px 6px 10px"><table class="ev-tab" id="evGriglia"></table></div>
+      <div id="evNota" style="font-size:12px; color:var(--tenue); margin-top:10px">Prenotati e importi in corsivo: giornate non ancora confermate, dalle email. Quando la giornata è confermata compaiono i numeri del modulo di Daniele.</div>
       <div class="ev-det nascosto" id="evDettaglio"></div>
     </div>
 
@@ -691,13 +707,19 @@
 
             <div class="carta">
               <div class="campo"><label for="azData">Data</label><input type="date" id="azData" style="width:auto"></div>
-              <div class="campo" style="margin-bottom:0"><label for="azAzienda">Azienda</label><input type="text" id="azAzienda" style="width:200px"></div>
+              <div class="campo"><label for="azAzienda">Azienda o festeggiato</label><input type="text" id="azAzienda" style="width:200px" placeholder="es. Bending Spoons, Compl. Sara"></div>
+              <div class="campo" style="margin-bottom:0"><label>Chi incassa il workshop</label>
+                <div style="display:flex; gap:8px; flex-wrap:wrap" id="azIncassa">
+                  <button type="button" class="scelta-btn" data-valore="MML">MML · aziende</button>
+                  <button type="button" class="scelta-btn" data-valore="CCC">CCC · compleanni</button>
+                </div>
+              </div>
             </div>
 
             <div class="carta">
               <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px">
                 <h2 style="margin:0">Workshop</h2>
-                <span class="pastiglia" style="background:rgba(242,167,159,.25); color:#F7C7C1">fattura MML · <span id="azAliqMml">22</span>%</span>
+                <span class="pastiglia" style="background:rgba(242,167,159,.25); color:#F7C7C1"><span id="azChiWs">fattura MML</span> · <span id="azAliqMml">22</span>%</span>
               </div>
               <div class="campo"><label for="azPersone">Persone</label><input type="text" id="azPersone" inputmode="numeric" style="width:90px"></div>
               <div class="campo"><label for="azPrezzo">A testa, IVA esclusa</label><input type="text" id="azPrezzo" inputmode="decimal" style="width:120px"></div>
@@ -1381,7 +1403,7 @@
     if (!el('meseEventi').value) el('meseEventi').value = oggiISO().slice(0, 7);
     var m = meseEventi();
     if (cacheEventi[m]) disegnaEventi(cacheEventi[m]);
-    else el('evGriglia').innerHTML = '<p style="color:var(--tenue); grid-column:1/-1">Un attimo…</p>';
+    else el('evGriglia').innerHTML = '<tbody><tr><td style="color:var(--tenue)">Un attimo…</td></tr></tbody>';
     return chiama({ azione: 'calendario', mese: m })
       .then(function (r) {
         cacheEventi[m] = r;
@@ -1394,65 +1416,82 @@
   }
 
   function disegnaEventi(r) {
-    var c = r.contatori;
-    var tessera = function (cl, n, et, sub) {
-      return '<div class="ev-t ' + cl + '"><b>' + n + '</b><span class="tx"><span class="lb">' + et + '</span>' + (sub || '') + '</span></div>';
-    };
-    var sub = function (b) { return '<span class="sb">Merc. <strong>' + b.mercoledi + '</strong> · Weekend <strong>' + b.weekend + '</strong></span>'; };
-    el('evContatori').innerHTML =
-      tessera('i', c.prenotati.totale, 'Prenotati', sub(c.prenotati)) +
-      tessera('c', c.confermati.totale, 'Confermati', sub(c.confermati)) +
-      tessera('f', c.freelabPagamento, 'Freelab a pagamento') +
-      tessera('g', c.freelabGratis, 'Freelab gratuiti');
-
-    var m = r.mese, oggi = oggiISO();
-    var primo = new Date(m + '-01T12:00:00');
-    var offset = (primo.getDay() + 6) % 7;
-    var giorniNelMese = new Date(primo.getFullYear(), primo.getMonth() + 1, 0).getDate();
-    var admin = ruolo === 'admin';
-    var html = ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'].map(function (x) { return '<div class="ev-dw">' + x + '</div>'; }).join('');
-    for (var v = 0; v < offset; v++) html += '<div class="ev-d vuoto" aria-hidden="true"></div>';
+    var m = r.mese, oggi = oggiISO(), admin = ruolo === 'admin';
+    el('evAltroGiorno').classList.toggle('nascosto', !admin);
+    // le righe: mercoledi, sabato e domenica, piu ogni giorno che ha qualcosa
+    var giorniNelMese = new Date(+m.slice(0, 4), +m.slice(5, 7), 0).getDate();
+    var date = [];
     for (var gi = 1; gi <= giorniNelMese; gi++) {
       var iso = m + '-' + String(gi).padStart(2, '0');
-      var g = r.giorni[iso];
-      var pv = g && g.privato, pz = (g && g.piva) || [];
-      var nPv = pv ? (pv.confermato ? pv.ospiti : pv.prenotati) : null;
-      var nPz = pz.length ? pz.reduce(function (s, x) { return s + (Number(x.persone) || 0); }, 0) : null;
-      var classi = 'ev-d' + (iso === oggi ? ' oggi' : '') + (iso === giornoScelto ? ' sel' : '');
-      var corpo = '';
-      var etichetta = gi + ' ' + MESI_BREVI[primo.getMonth()];
-      var conf = '';
-      var barra = '<div class="ev-gb"><span>' + gi + '</span><span class="ev-gm">&nbsp;' + MESI_BREVI[primo.getMonth()] + '</span>' + (pv && pv.confermato ? '<em>Confermato</em>' : '') + '</div>';
-      var aria = etichetta;
-      if (pv && pz.length) {
-        classi += ' hz' + (pv.confermato ? ' ok' : '');
-        corpo = barra +
-          '<div class="ev-m mpv"><b>' + nPv + '</b><u>Privati</u>' + conf + '</div>' +
-          '<div class="ev-m maz"><b>' + nPz + '</b><u>P. IVA</u></div>';
-        aria += ', privati ' + nPv + ', P. IVA ' + nPz;
-      } else if (pv) {
-        classi += ' pv' + (pv.confermato ? ' ok' : '');
-        corpo = barra + '<div class="ev-line"><b>' + nPv + '</b><u>Privati</u>' + conf + '</div>';
-        aria += ', privati ' + nPv + (pv.confermato ? ', confermato' : '');
-      } else if (pz.length) {
-        classi += ' az';
-        corpo = barra + '<div class="ev-line"><b>' + nPz + '</b><u>P. IVA</u></div>';
-        aria += ', P. IVA ' + nPz;
-      } else {
-        corpo = barra;
-      }
-      var cliccabile = admin || pv || pz.length;
-      html += cliccabile
-        ? '<button type="button" class="' + classi + '" data-iso="' + iso + '" aria-label="' + aria + '">' + corpo + '</button>'
-        : '<div class="' + classi + '">' + corpo + '</div>';
+      var dw = new Date(iso + 'T12:00:00').getDay();
+      if (dw === 3 || dw === 6 || dw === 0 || r.giorni[iso]) date.push(iso);
     }
-    el('evGriglia').innerHTML = html;
-    Array.prototype.forEach.call(el('evGriglia').querySelectorAll('button[data-iso]'), function (b) {
-      b.addEventListener('click', function () { scegliGiorno(b.getAttribute('data-iso')); });
+    var COL = [['superb', 'Superb', 'CCC'], ['gcC', 'Gift card', 'CCC'], ['gcM', 'Gift card', 'MML'],
+               ['deco', 'Decorazione', 'CCC'], ['f10', 'Freelab 10 €', 'MML'], ['f20', 'Freelab 20 €', 'MML']];
+    var tot = { pren: 0, provv: 0, ccc: 0, mml: 0, ev: 0, evPers: 0 };
+    COL.forEach(function (c) { tot[c[0]] = 0; });
+    var num = function (v) { return v ? '<td>' + v + '</td>' : '<td class="z">0</td>'; };
+    var vuota = '<td class="v">·</td>';
+    var GIORNI = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+
+    var h = '<thead><tr><th class="l">Data</th><th>Stato</th><th>Prenotati<small>provvisori</small></th>' +
+      COL.map(function (c) { return '<th class="' + (c[2] === 'CCC' ? 'cc' : 'mm') + '">' + c[1] + '<small>' + c[2] + '</small></th>'; }).join('') +
+      '<th class="l">Aziende<br>compleanni</th><th class="r">Totale giornata</th>' + (admin ? '<th></th>' : '') + '</tr></thead><tbody>';
+
+    date.forEach(function (iso) {
+      var g = r.giorni[iso] || { privato: null, piva: [] };
+      var pv = g.privato, pz = g.piva || [];
+      var d = new Date(iso + 'T12:00:00');
+      var formato = d.getDay() === 3 ? 'Gattini & Clay' : (d.getDay() === 0 || d.getDay() === 6) ? 'A-mici & Clay' : (pz.length ? 'Azienda' : '');
+      var conf = pv && pv.confermato;
+      var stato = conf ? '<span class="st-ok">✓ confermata</span>' : (pv ? '<span class="st-pr">provvisoria</span>' : '');
+      h += '<tr' + (iso === oggi ? ' class="oggi"' : '') + '><td class="l">' + GIORNI[d.getDay()] + ' ' + d.getDate() +
+        '<span class="s">' + formato + '</span></td><td>' + stato + '</td>';
+      // prenotati: solo finche la giornata non e confermata
+      if (pv && !conf) { h += '<td class="pv" style="font-style:normal">' + pv.prenotati + '</td>'; tot.pren += pv.prenotati; }
+      else h += vuota;
+      if (conf && pv.colonne) COL.forEach(function (c) { var v = pv.colonne[c[0]] || 0; tot[c[0]] += v; h += num(v); });
+      else COL.forEach(function () { h += vuota; });
+      // aziende e compleanni, uno sotto l altro
+      var ccc = conf ? (pv.incCCC || 0) : 0, mml = conf ? (pv.incMML || 0) : 0;
+      h += '<td class="ev-az">' + pz.map(function (x) {
+        var inc = (x.incCCC || 0) + (x.incMML || 0);
+        ccc += x.incCCC || 0; mml += x.incMML || 0;
+        tot.ev++; tot.evPers += Number(x.persone) || 0;
+        return '<b>' + escapeHtml(x.breve || x.azienda || 'Evento') + '</b><span class="s">' + x.persone + ' pers. · ' + euroTondo(inc) +
+          ' · ' + (x.incassa === 'CCC' ? 'CCC' : 'MML') + '</span>';
+      }).join('') + '</td>';
+      tot.ccc += ccc; tot.mml += mml;
+      var provv = pv && !conf ? (pv.provvisorio || 0) : 0;
+      tot.provv += provv;
+      var cella = '';
+      if (ccc || mml) cella += euroTondo(ccc + mml) + '<span class="s">CCC ' + euroTondo(ccc) + ' · MML ' + euroTondo(mml) + '</span>';
+      if (provv) cella += '<span class="pv">~ ' + euroTondo(provv) + '</span><span class="s">dalle prenotazioni</span>';
+      if (!cella) cella = '<span class="v">·</span>';
+      h += '<td class="r">' + cella + '</td>';
+      if (admin) h += '<td><button type="button" class="azione apri" data-apri="' + iso + '">Apri</button></td>';
+      h += '</tr>';
     });
-    if (giornoScelto && giornoScelto.slice(0, 7) === m) disegnaDettaglioGiorno(r);
-    else el('evDettaglio').classList.add('nascosto');
+
+    h += '</tbody><tfoot><tr class="tot"><td class="l">Totale del mese</td><td></td><td>' + tot.pren + '<span class="s">ancora provvisori</span></td>' +
+      COL.map(function (c) { return '<td>' + tot[c[0]] + '</td>'; }).join('') +
+      '<td class="ev-az">' + (tot.ev ? tot.ev + (tot.ev === 1 ? ' evento' : ' eventi') + '<span class="s">' + tot.evPers + ' persone</span>' : '') + '</td>' +
+      '<td class="r"><span style="font-family:Fraunces,serif; font-size:22px">' + euroTondo(tot.ccc + tot.mml) + '</span>' +
+      '<span class="s">CCC ' + euroTondo(tot.ccc) + ' · MML ' + euroTondo(tot.mml) + '</span>' +
+      (tot.provv ? '<span class="s" style="color:var(--legno-chiaro)">+ ~ ' + euroTondo(tot.provv) + ' ancora provvisori</span>' : '') +
+      '</td>' + (admin ? '<td></td>' : '') + '</tr></tfoot>';
+    el('evGriglia').innerHTML = h;
+    Array.prototype.forEach.call(el('evGriglia').querySelectorAll('button[data-apri]'), function (b) {
+      b.addEventListener('click', function () { apriGiorno(b.getAttribute('data-apri')); });
+    });
+    el('evDettaglio').classList.add('nascosto');
   }
+
+  el('btnEvAltro').addEventListener('click', function () {
+    var iso = el('evDataAltro').value;
+    if (!iso) { avvisa('Scegli la data dell’evento.', true); return; }
+    apriGiorno(iso);
+  });
 
   function scegliGiorno(iso) {
     giornoScelto = iso === giornoScelto ? '' : iso;
@@ -2734,8 +2773,9 @@
   function contoDi(e) {
     var righe = [];
     var netto = (Number(e.persone) || 0) * (Number(e.prezzoTesta) || 0);
-    var lordo = netto * (1 + ivaDi('MML') / 100);
-    righe.push(rigaConto('Workshop', lordo, 'diviso', 'MML'));
+    var chi = e.incassa === 'CCC' ? 'CCC' : 'MML';
+    var lordo = netto * (1 + ivaDi(chi) / 100);
+    righe.push(rigaConto('Workshop', lordo, 'diviso', chi));
 
     if (Number(e.consumazioni)) {
       righe.push(rigaConto('Consumazioni', Number(e.consumazioni),
@@ -2818,7 +2858,7 @@
     apriEventoAziendale({
       id: '', data: dataIniziale, azienda: '',
       persone: 0, prezzoTesta: 0,
-      consumazioni: 0, consumazioniDiChi: 'diviso',
+      consumazioni: 0, consumazioniDiChi: 'diviso', incassa: 'MML',
       note: '', extra: []
     });
   }
@@ -2839,6 +2879,8 @@
     el('azAliqCcc').textContent = ivaDi('CCC');
 
     segnaScelta('azConsDiChi', e.consumazioniDiChi || 'diviso');
+    segnaScelta('azIncassa', e.incassa === 'CCC' ? 'CCC' : 'MML');
+    aggiornaChiWs();
     el('titoloAziendali').textContent = e.id ? (e.azienda || 'Evento') : 'Nuovo evento aziendale';
     el('btnEliminaAziendale').classList.toggle('nascosto', !e.id);
     el('elencoAziendali').classList.add('nascosto');
@@ -2863,6 +2905,20 @@
   Array.prototype.forEach.call(el('azConsDiChi').querySelectorAll('.scelta-btn'), function (b) {
     b.addEventListener('click', function () {
       segnaScelta('azConsDiChi', b.getAttribute('data-valore'));
+      ricalcolaAziendale();
+    });
+  });
+
+  // chi incassa il workshop: MML per le aziende, il CCC per compleanni e simili
+  function aggiornaChiWs() {
+    var ccc = leggiScelta('azIncassa') === 'CCC';
+    el('azChiWs').textContent = ccc ? 'incassa CCC' : 'fattura MML';
+    el('azAliqMml').textContent = ivaDi(ccc ? 'CCC' : 'MML');
+  }
+  Array.prototype.forEach.call(el('azIncassa').querySelectorAll('.scelta-btn'), function (b) {
+    b.addEventListener('click', function () {
+      segnaScelta('azIncassa', b.getAttribute('data-valore'));
+      aggiornaChiWs();
       ricalcolaAziendale();
     });
   });
@@ -2961,6 +3017,7 @@
       prezzoTesta: Number(String(el('azPrezzo').value).replace(',', '.')) || 0,
       consumazioni: Number(String(el('azConsumazioni').value).replace(',', '.')) || 0,
       consumazioniDiChi: leggiScelta('azConsDiChi'),
+      incassa: leggiScelta('azIncassa') === 'CCC' ? 'CCC' : 'MML',
       note: el('azNote').value,
       extra: extraCorrenti
     };
@@ -3485,7 +3542,7 @@
     var incassa = [['Privati · paganti Superb', 'CCC', privatiCCC - buoniCCC]];
     if (buoniCCC) incassa.push(['Buoni CCC Ecommerce · ' + ((r.clienti && r.clienti.buoniCCC) || 0) + ' \u00d7 ' + euro(55), 'CCC', buoniCCC]);
     incassa.push(['P. IVA', 'MML', pivaMML]);
-    if (Math.round(pivaCCC * 100) !== 0) incassa.push(['P. IVA · consumazioni', 'CCC', pivaCCC]);
+    if (Math.round(pivaCCC * 100) !== 0) incassa.push(['Aziende e compleanni · consumazioni e compleanni', 'CCC', pivaCCC]);
     incassa.push(['Freelab a pagamento · ' + ((r.clienti && r.clienti.freelabCottura) || 0) + ' \u00d7 cottura', 'MML', pt.freelabIncasso || 0]);
     ((r.clienti && r.clienti.extra) || []).forEach(function (x) {
       if (x.persone) incassa.push([x.nome + ' · ' + x.persone + ' \u00d7 ' + euro(x.prezzo), x.incassa, x.incasso]);
@@ -3827,8 +3884,14 @@
       });
     });
     (r.aziendali || []).forEach(function (e) {
-      righeEv.push({ d: e.data, riga: [dataIt(e.data), 'P. IVA · ' + (e.azienda || '-'), 'MML', e.persone, eur2(e.conto.inManoMML), '-'] });
-      if (e.conto.inManoCCC) righeEv.push({ d: e.data, riga: [dataIt(e.data), 'P. IVA · consumazioni ' + (e.azienda || ''), 'CCC', '', eur2(e.conto.inManoCCC), '-'] });
+      // il workshop lo incassa MML (aziende) o il CCC (compleanni); il resto va a chi lo incassa
+      if (e.incassa === 'CCC') {
+        righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Evento · ' + (e.azienda || '-'), 'CCC', e.persone, eur2(e.conto.inManoCCC), '-'] });
+        if (e.conto.inManoMML) righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Extra · ' + (e.azienda || ''), 'MML', '', eur2(e.conto.inManoMML), '-'] });
+      } else {
+        righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Azienda · ' + (e.azienda || '-'), 'MML', e.persone, eur2(e.conto.inManoMML), '-'] });
+        if (e.conto.inManoCCC) righeEv.push({ d: e.data, riga: [dataIt(e.data), 'Consumazioni · ' + (e.azienda || ''), 'CCC', '', eur2(e.conto.inManoCCC), '-'] });
+      }
     });
     righeEv.sort(function (p, q) { return p.d < q.d ? -1 : p.d > q.d ? 1 : 0; });
     if (righeEv.length) {
