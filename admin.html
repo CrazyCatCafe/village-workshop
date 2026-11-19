@@ -802,6 +802,44 @@
         </div>
       </div>
 
+      <!-- dal novembre 2026: il conto sull'incassato -->
+      <div class="fila" style="margin-bottom:22px; align-items:flex-start">
+        <div style="flex:3 1 520px; min-width:0">
+          <div class="carta" style="margin-bottom:18px">
+            <h2 style="margin:0 0 6px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Incassato del mese</h2>
+            <p style="margin:0 0 14px; font-size:14px; color:var(--tenue); max-width:70ch">Ogni vendita conta nel mese in cui è stata pagata, anche se il cliente viene dopo. Prenotazioni, buoni e gift card: <span id="incQuota">35 €</span> a persona a MML, il resto al CCC.</p>
+            <div class="scorri" style="background:rgba(251,243,238,.05); border-radius:14px; padding:6px 4px"><table id="incTabella"></table></div>
+          </div>
+          <div class="carta" style="margin-bottom:18px">
+            <h2 style="margin:0 0 6px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Da scrivere a mano</h2>
+            <p style="margin:0 0 14px; font-size:14px; color:var(--tenue)">Gift card MML (ce le dicono loro a inizio mese), decorazioni e Freelab (dal modulo di Daniele).</p>
+            <div class="fila" id="incManuali" style="gap:14px"></div>
+            <div id="incDaniele" style="font-size:13px; color:var(--tenue); margin-top:10px"></div>
+            <div style="display:flex; justify-content:flex-end; margin-top:12px"><button type="button" class="azione piena" id="btnSalvaVoci">Salva</button></div>
+          </div>
+          <div class="carta" style="margin-bottom:18px">
+            <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between">
+              <div><h2 style="margin:0 0 4px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Le vendite lette</h2><div style="font-size:13px; color:var(--tenue)" id="incVenditeSommario">—</div></div>
+              <button type="button" class="azione" id="btnApriVendite" aria-expanded="false">Apri l'elenco ▾</button>
+            </div>
+            <div id="incElencoVendite" class="nascosto" style="margin-top:14px"><div class="scorri" style="background:rgba(251,243,238,.05); border-radius:14px; padding:6px 4px"><table id="incVendite"></table></div></div>
+          </div>
+        </div>
+        <div style="flex:2 1 300px; min-width:0">
+          <div class="carta" style="margin-bottom:18px">
+            <h2 style="margin:0 0 12px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Chi paga chi</h2>
+            <table id="incSaldo"></table>
+            <div style="font-size:12px; color:var(--tenue); margin-top:10px">Le sponsorizzate social le paga MML e restano fuori dal conto.</div>
+          </div>
+          <div class="carta" style="margin-bottom:18px">
+            <h2 style="margin:0 0 12px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Persone nel mese</h2>
+            <table id="incPersone"></table>
+            <div style="font-size:12px; color:var(--tenue); margin-top:8px">Persone che hanno pagato nel mese, non quelle venute.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="rsVecchio" class="nascosto">
       <div class="fila" style="margin-bottom:22px">
         <div class="tessera buona" style="flex:1 1 240px"><div class="eticchetta">Quota CCC</div><div class="cifra" id="rsCcc">€ 0</div></div>
         <div class="tessera spicca" style="flex:1 1 240px"><div class="eticchetta">Quota MML</div><div class="cifra" id="rsMml">€ 0</div></div>
@@ -901,11 +939,13 @@
         <div class="scorri" style="background:rgba(251,243,238,.05); border-radius:14px; padding:6px 4px"><table id="rsCostiMml"></table></div>
       </div>
 
+      </div><!-- fine rsVecchio -->
+
       <!-- aziendali, richiudibile -->
       <div class="carta" style="margin-bottom:18px">
         <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between">
           <div style="min-width:0">
-            <h2 style="margin:0 0 4px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">P. IVA</h2>
+            <h2 style="margin:0 0 4px; font-family:Fraunces,serif; font-size:22px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Aziende e compleanni</h2>
             <div style="font-size:13px; color:var(--tenue)" id="rsAzSommario">—</div>
           </div>
           <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap">
@@ -2058,9 +2098,7 @@
     chiama({ azione: 'modulo', data: data }).then(function (r) {
       if (moduloChiesto !== data) return;   // nel frattempo hai aperto un altra giornata
       moduloRisposta = r;
-      // la giornata non ha ancora numeri suoi: prendo quelli del modulo
-      var salvate = privatoCorrente && privatoCorrente.voci;
-      if (r.trovato && !salvate && (!privatoCorrente.id || privatoCorrente.daSalvare)) vociCorrenti = vociDalModulo(r);
+      // i numeri del modulo restano da guardare: non li copio piu da solo
       disegnaBox();
       ricalcolaPrivato();
     }).catch(function (err) {
@@ -2094,24 +2132,27 @@
     if (m && !m.trovato && !m.errore) h += '<div style="font-size:13px; color:var(--tenue); margin-bottom:6px">Daniele non ha ancora compilato il modulo per questo giorno: puoi scrivere tu i numeri.</div>';
     if (!m && privatoCorrente && privatoCorrente.data > oggiISO()) h += '<div style="font-size:13px; color:var(--tenue); margin-bottom:6px">Giornata futura: i numeri arrivano dal modulo di Daniele la sera del laboratorio.</div>';
     h += '<div id="bxAvviso" style="font-size:13px; margin-bottom:6px"></div>';
-    if (m && m.trovato && salvate) h += '<button type="button" class="azione" id="btnRimettiModulo" style="min-height:30px; padding:0 12px; font-size:12px; margin-bottom:8px">Rimetti i numeri del modulo</button>';
 
-    h += '<div class="scorri"><table style="width:100%"><thead><tr><th>Voce</th><th style="text-align:center">Persone</th><th style="text-align:right">Importo</th></tr></thead><tbody>';
+    var mv = (m && m.trovato && m.valori) || null;
+    h += '<div class="scorri"><table style="width:100%"><thead><tr><th>Voce</th>' + (mv ? '<th style="text-align:center">Daniele</th>' : '') +
+      '<th style="text-align:center">Persone</th><th style="text-align:right">Importo</th></tr></thead><tbody>';
     righeBox().forEach(function (r) {
       var x = vociCorrenti[r.k];
       var col = r.chi === 'CCC' ? 'rgba(169,201,166,.25); color:#C9E0C6' : 'rgba(242,167,159,.25); color:var(--salmone)';
       h += '<tr><td>' + r.nome + ' · ' + euroTondo(prezzoVoce(r)) +
         ' <span class="pastiglia" style="font-size:10px; padding:1px 7px; background:' + col + '">' + r.chi + '</span></td>' +
+        (mv ? '<td style="text-align:center; color:var(--legno-chiaro)">' + (mv[r.k] !== undefined ? mv[r.k] : '–') + '</td>' : '') +
         '<td style="text-align:center"><input type="text" inputmode="numeric" data-bx="' + r.k + '" data-q="n" value="' + x.n + '" style="width:60px; text-align:center"></td>' +
         '<td style="text-align:right"><input type="text" inputmode="decimal" data-bx="' + r.k + '" data-q="eur" value="' + x.eur + '" style="width:110px; text-align:right; font-weight:700"></td></tr>';
     });
-    h += '<tr style="font-weight:800; color:var(--salvia)"><td>Totale CCC</td><td style="text-align:center" id="bxNCCC"></td><td style="text-align:right" id="bxECCC"></td></tr>' +
-      '<tr style="font-weight:800; color:var(--salmone)"><td>Totale MML</td><td style="text-align:center" id="bxNMML"></td><td style="text-align:right" id="bxEMML"></td></tr>' +
-      '<tr style="font-weight:800; font-size:18px"><td style="font-family:Fraunces,serif">Totale giornata</td><td style="text-align:center" id="bxN"></td><td style="text-align:right; font-family:Fraunces,serif" id="bxE"></td></tr>' +
+    var vuota = mv ? '<td></td>' : '';
+    h += '<tr style="font-weight:800; color:var(--salvia)"><td>Totale CCC</td>' + vuota + '<td style="text-align:center" id="bxNCCC"></td><td style="text-align:right" id="bxECCC"></td></tr>' +
+      '<tr style="font-weight:800; color:var(--salmone)"><td>Totale MML</td>' + vuota + '<td style="text-align:center" id="bxNMML"></td><td style="text-align:right" id="bxEMML"></td></tr>' +
+      '<tr style="font-weight:800; font-size:18px"><td style="font-family:Fraunces,serif">Totale giornata</td>' + vuota + '<td style="text-align:center" id="bxN"></td><td style="text-align:right; font-family:Fraunces,serif" id="bxE"></td></tr>' +
       '</tbody></table></div>';
     h += '<button type="button" class="azione piena" id="btnUsaModulo" style="width:100%; margin-top:14px">' +
-      (modoConferma ? 'Usa questi numeri e conferma la giornata' : 'Salva questi numeri') + '</button>' +
-      '<div style="font-size:12px; color:var(--tenue); margin-top:6px; text-align:center">Puoi cambiare persone e importi. Dopo puoi sempre riaprire la giornata e correggere.</div>';
+      (modoConferma ? 'Conferma la giornata' : 'Salva la giornata') + '</button>' +
+      '<div style="font-size:12px; color:var(--tenue); margin-top:6px; text-align:center">La colonna Daniele è solo da guardare: i numeri li scrivi tu. Il conto dei soldi si fa nel Resoconto, sull\'incassato.</div>';
     box.innerHTML = h;
 
     box.querySelectorAll('input[data-bx]').forEach(function (i) {
@@ -2132,8 +2173,6 @@
       });
     });
     el('btnUsaModulo').addEventListener('click', function () { el('btnSalvaPrivato').click(); });
-    var rim = el('btnRimettiModulo');
-    if (rim) rim.addEventListener('click', function () { vociCorrenti = vociDalModulo(moduloRisposta); disegnaBox(); ricalcolaPrivato(); });
     aggiornaTotaliBox();
   }
 
@@ -2149,7 +2188,7 @@
       var torna = t.nPag === pren;
       av.style.color = torna ? 'var(--salvia)' : 'var(--salmone)';
       av.textContent = torna ? '✓ Paganti CCC come nelle email: ' + pren
-        : '⚠ Qui ' + t.nPag + ' paganti CCC, dalle email erano ' + pren + (m && m.trovato ? ' · vale il modulo' : '');
+        : '⚠ Qui ' + t.nPag + ' paganti CCC, dalle email erano ' + pren;
     } else av.textContent = '';
   }
 
@@ -3172,6 +3211,124 @@
     chiama({ azione: 'resoconto', mese: el('meseResoconto').value })
       .then(function (r) { resoconto = r; disegnaResoconto(); })
       .catch(function (err) { avvisa('Non riesco a leggere il resoconto: ' + err.message, true); });
+    caricaIncassato();
+  }
+
+  /* ---------- il conto sull'incassato (da novembre 2026) */
+  var incassato = null;
+  function caricaIncassato() {
+    var mese = el('meseResoconto').value;
+    el('incTabella').innerHTML = '<tr><td style="color:var(--tenue)">Un attimo…</td></tr>';
+    chiama({ azione: 'incassato', mese: mese })
+      .then(function (r) { incassato = r; disegnaManuali(); disegnaIncassato(); })
+      .catch(function (err) { el('incTabella').innerHTML = '<tr><td style="color:var(--salmone)">' + escapeHtml(err.message) + '</td></tr>'; });
+  }
+
+  var CAMPI_MANUALI = [
+    { k: 'giftcardMML', nome: 'Gift card MML', sotto: 'persone' },
+    { k: 'deco', nome: 'Decorazioni', sotto: 'persone' },
+    { k: 'f10', nome: 'Freelab 10 €', sotto: 'persone' },
+    { k: 'f20', nome: 'Freelab 20 €', sotto: 'persone' },
+    { k: 'superbPerc', nome: 'Commissione Superb', sotto: '%' }
+  ];
+  function disegnaManuali() {
+    var v = incassato.voci, admin = ruolo === 'admin';
+    el('incManuali').innerHTML = CAMPI_MANUALI.map(function (c) {
+      return '<div class="campo" style="margin:0"><label for="inc_' + c.k + '">' + c.nome + ' <span style="font-weight:400; color:var(--tenue)">· ' + c.sotto + '</span></label>' +
+        '<input type="text" inputmode="decimal" id="inc_' + c.k + '" value="' + (v[c.k] || 0) + '" style="width:90px"' + (admin ? '' : ' disabled') + '></div>';
+    }).join('');
+    CAMPI_MANUALI.forEach(function (c) {
+      el('inc_' + c.k).addEventListener('input', function () {
+        incassato.voci[c.k] = Math.max(0, Number(String(el('inc_' + c.k).value).replace(',', '.')) || 0);
+        disegnaIncassato();
+      });
+    });
+    el('btnSalvaVoci').classList.toggle('nascosto', !admin);
+    var d = incassato.daniele;
+    el('incDaniele').innerHTML = d
+      ? 'Nel modulo di Daniele, questo mese (' + (d.giorni || 0) + ' giornate): decorazioni <strong>' + (d.decorazione || 0) +
+        '</strong> · Freelab 10 € <strong>' + (d.cottura || 0) + '</strong> · Freelab 20 € <strong>' + (d.cristallina || 0) +
+        '</strong> · gift card MML <strong>' + ((d.giftcard || 0) + (d.buono || 0)) + '</strong>. Sono solo da guardare: i numeri li scrivi tu.'
+      : (incassato.problemi && incassato.problemi.length ? 'Modulo di Daniele: ' + escapeHtml(incassato.problemi.join(' · ')) : '');
+  }
+  el('btnSalvaVoci').addEventListener('click', function () {
+    var b = el('btnSalvaVoci'); b.disabled = true;
+    chiama({ azione: 'salvaVociMese', mese: incassato.mese, voci: JSON.stringify(incassato.voci) })
+      .then(function () { avvisa('Salvato.'); })
+      .catch(function (err) { avvisa('Non salvato: ' + err.message, true); })
+      .finally(function () { b.disabled = false; });
+  });
+  apriChiudi('btnApriVendite', 'incElencoVendite');
+
+  /** Una sola formula, per la pagina e per il PDF. */
+  function contoIncassato(r) {
+    var v = r.voci, Q = Number(v.quotaMML) || 35;
+    var righe = [];
+    var somma = function (fonte, tipo, campo) {
+      return r.vendite.filter(function (x) { return x.fonte === fonte && x.tipo === tipo; })
+        .reduce(function (s, x) { return s + (Number(x[campo]) || 0); }, 0);
+    };
+    var lordoSuperb = 0;
+    [['Superb', 'brunch', 'Superb · Brunch ceramica', 'email Superb, tolto 1 € a persona'],
+     ['Superb', 'aperitivo', 'Superb · Aperitivo ceramica', 'email Superb, tolto 1 € a persona'],
+     ['Shopify', 'brunch', 'Buoni CCC · Brunch', 'ordini Shopify'],
+     ['Shopify', 'aperitivo', 'Buoni CCC · Aperitivo/Merenda', 'ordini Shopify']].forEach(function (t) {
+      var pers = somma(t[0], t[1], 'persone'), inc = somma(t[0], t[1], 'incasso');
+      if (t[0] === 'Superb') lordoSuperb += somma(t[0], t[1], 'lordo');
+      righe.push({ nome: t[2], fonte: t[3], persone: pers, incasso: inc, mml: pers * Q, ccc: inc - pers * Q, incassa: 'CCC' });
+    });
+    var g = Number(v.giftcardMML) || 0, pg = Number(v.prezzoGiftcard) || 55;
+    righe.push({ nome: 'Gift card MML', fonte: 'scritte a mano · ' + euroTondo(pg), persone: g, incasso: g * pg, mml: g * Q, ccc: g * (pg - Q), incassa: 'MML' });
+    var d = Number(v.deco) || 0, pd = Number(v.prezzoDeco) || 45, dm = Number(v.decoMML) || 30;
+    righe.push({ nome: 'Decorazioni', fonte: 'scritte a mano · ' + euroTondo(pd), persone: d, incasso: d * pd, mml: d * dm, ccc: d * (pd - dm), incassa: 'CCC' });
+    var f10 = Number(v.f10) || 0, f20 = Number(v.f20) || 0, fi = f10 * 10 + f20 * 20;
+    righe.push({ nome: 'Freelab 10 € e 20 €', fonte: 'scritti a mano · a metà', persone: f10 + f20, incasso: fi, mml: fi / 2, ccc: fi / 2, incassa: 'MML' });
+    (r.eventi || []).forEach(function (e) {
+      righe.push({ nome: (e.incassa === 'CCC' ? 'Evento · ' : 'Azienda · ') + (e.breve || e.azienda), fonte: dataIt(e.data) + ' · a metà, consumazioni come da evento',
+                   persone: e.persone, incasso: e.totale, mml: e.spettaMML, ccc: e.spettaCCC, incassa: e.incassa,
+                   inManoMML: e.inManoMML, inManoCCC: e.inManoCCC });
+    });
+    var tot = { persone: 0, incasso: 0, mml: 0, ccc: 0, inManoMML: 0, inManoCCC: 0 };
+    righe.forEach(function (x) {
+      tot.persone += x.persone; tot.incasso += x.incasso; tot.mml += x.mml; tot.ccc += x.ccc;
+      var inMML = x.inManoMML !== undefined ? x.inManoMML : (x.incassa === 'MML' ? x.incasso : 0);
+      tot.inManoMML += inMML; tot.inManoCCC += x.incasso - inMML;
+    });
+    var commissione = Math.round(lordoSuperb * (Number(v.superbPerc) || 0)) / 100;
+    var saldo = tot.mml - commissione - tot.inManoMML;   // positivo: il CCC paga MML
+    var pers = function (fonte, tipo) { return somma(fonte, tipo, 'persone'); };
+    return { righe: righe, tot: tot, lordoSuperb: lordoSuperb, commissione: commissione, saldo: saldo, quota: Q,
+             persone: [['Brunch ceramica', pers('Superb', 'brunch') + pers('Shopify', 'brunch')],
+                       ['Aperitivo ceramica', pers('Superb', 'aperitivo') + pers('Shopify', 'aperitivo')],
+                       ['Gift card MML', g], ['Decorazioni', d], ['Freelab', f10 + f20],
+                       ['Aziende e compleanni', (r.eventi || []).reduce(function (s, e) { return s + (Number(e.persone) || 0); }, 0)]] };
+  }
+
+  function disegnaIncassato() {
+    var c = contoIncassato(incassato);
+    el('incQuota').textContent = euroTondo(c.quota);
+    var cel = function (x, cls) { return '<td style="text-align:right; white-space:nowrap' + (cls ? '; ' + cls : '') + '">' + x + '</td>'; };
+    el('incTabella').innerHTML = '<thead><tr><th>Voce</th><th style="text-align:right">Persone</th><th style="text-align:right">Incasso</th>' +
+      '<th style="text-align:right; color:var(--salmone)">A MML</th><th style="text-align:right; color:var(--salvia)">A CCC</th></tr></thead><tbody>' +
+      c.righe.map(function (x) {
+        return '<tr><td>' + escapeHtml(x.nome) + '<div style="font-size:11px; color:var(--tenue)">' + escapeHtml(x.fonte) + ' · incassa ' + x.incassa + '</div></td>' +
+          cel(x.persone) + cel(euro(x.incasso)) + cel(euro(x.mml), 'color:var(--salmone)') + cel(euro(x.ccc), 'color:var(--salvia)') + '</tr>';
+      }).join('') + '</tbody><tfoot><tr style="font-weight:800"><td>Totale</td>' + cel(c.tot.persone) + cel(euro(c.tot.incasso)) +
+      cel(euro(c.tot.mml), 'color:var(--salmone)') + cel(euro(c.tot.ccc), 'color:var(--salvia)') + '</tr></tfoot>';
+    var riga = function (a, b, stile) { return '<tr' + (stile ? ' style="' + stile + '"' : '') + '><td>' + a + '</td><td style="text-align:right; white-space:nowrap">' + b + '</td></tr>'; };
+    var chi = Math.round(c.saldo * 100) === 0 ? 'Siete pari' : (c.saldo > 0 ? 'Il CCC paga a MML' : 'MML paga al CCC');
+    el('incSaldo').innerHTML = riga('A MML spetta', euro(c.tot.mml)) +
+      riga('− commissioni Superb ' + (Number(incassato.voci.superbPerc) || 0) + '% (le paga MML)<div style="font-size:11px; color:var(--tenue)">su ' + euro(c.lordoSuperb) + ' pagati su Superb</div>', '− ' + euro(c.commissione)) +
+      riga('− quanto MML ha già incassato<div style="font-size:11px; color:var(--tenue)">gift card, Freelab, aziende</div>', '− ' + euro(c.tot.inManoMML)) +
+      riga('<strong>' + chi + '</strong>', '<strong style="font-family:Fraunces,serif; font-size:26px">' + euro(Math.abs(c.saldo)) + '</strong>', 'border-top:1px solid rgba(251,243,238,.25)');
+    el('incPersone').innerHTML = c.persone.map(function (p) { return riga(p[0], '<strong>' + p[1] + '</strong>'); }).join('');
+    var ve = incassato.vendite;
+    el('incVenditeSommario').textContent = ve.length + ' vendite lette dalle email in questo mese (Superb e Shopify)';
+    el('incVendite').innerHTML = '<thead><tr><th>Data</th><th>Fonte</th><th>Tipo</th><th style="text-align:right">Pers.</th><th style="text-align:right">Incasso</th><th>Nota</th></tr></thead><tbody>' +
+      ve.slice().sort(function (a, b) { return a.data < b.data ? -1 : 1; }).map(function (x) {
+        return '<tr><td>' + dataIt(x.data) + '</td><td>' + x.fonte + '</td><td>' + x.tipo + '</td>' + cel(x.persone) + cel(euro(x.incasso)) +
+          '<td style="font-size:12px; color:var(--tenue)">' + escapeHtml(x.nota) + '</td></tr>';
+      }).join('') + '</tbody>';
   }
 
   function apriChiudi(idBottone, idElenco) {
@@ -3721,11 +3878,60 @@
     var bt = el('btnScaricaResoconto');
     bt.disabled = true; bt.textContent = 'Preparo il PDF…';
     logoPerCarta().then(function (logo) {
-      creaPdf(logo);
+      if (incassato) creaPdfIncassato(logo); else creaPdf(logo);
     }).catch(function (err) {
       avvisa('PDF non riuscito: ' + err.message, true);
     }).finally(function () { bt.disabled = false; bt.textContent = 'Scarica il PDF'; });
   });
+
+  function creaPdfIncassato(logo) {
+    var r = incassato, c = contoIncassato(r);
+    var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+    var VINO = [74, 17, 41], CHIARO = [250, 240, 236], GRIGIO = [110, 90, 98];
+    var M = 14, y = 14;
+    var nomeMese = new Date(r.mese + '-01T12:00:00').toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+    nomeMese = nomeMese.charAt(0).toUpperCase() + nomeMese.slice(1);
+    if (logo) { var lw = 78, lh = lw * logo.h / logo.w; doc.addImage(logo.url, 'PNG', M, y, lw, lh); y += lh + 8; }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor.apply(doc, [163, 117, 74]);
+    doc.text('A-MICI & CLAY', M, y); y += 7;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor.apply(doc, VINO);
+    doc.text('Resoconto di ' + nomeMese, M, y);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, GRIGIO);
+    doc.text('Generato il ' + new Date().toLocaleDateString('it-IT'), 210 - M, y, { align: 'right' }); y += 6;
+    doc.text('Conto sull\'incassato: ogni vendita conta nel mese in cui è stata pagata. ' + c.quota + ' € a persona a MML su prenotazioni, buoni e gift card.', M, y); y += 6;
+    var stile = { theme: 'grid', margin: { left: M, right: M },
+      styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.4, lineColor: [225, 210, 215], lineWidth: 0.2, textColor: [40, 30, 35] },
+      headStyles: { fillColor: VINO, textColor: [255, 255, 255], fontStyle: 'bold' },
+      footStyles: { fillColor: CHIARO, textColor: VINO, fontStyle: 'bold' }, showFoot: 'lastPage' };
+    var dx = { halign: 'right' };
+    doc.autoTable(Object.assign({}, stile, { startY: y,
+      head: [['Voce', 'Incassa', 'Persone', 'Incasso', 'A MML', 'A CCC']],
+      body: c.righe.map(function (x) { return [x.nome, x.incassa, x.persone, eur2(x.incasso), eur2(x.mml), eur2(x.ccc)]; }),
+      foot: [['Totale', '', c.tot.persone, eur2(c.tot.incasso), eur2(c.tot.mml), eur2(c.tot.ccc)]],
+      columnStyles: { 2: dx, 3: dx, 4: dx, 5: dx } }));
+    y = doc.lastAutoTable.finalY + 8;
+    var chi = Math.round(c.saldo * 100) === 0 ? 'Siete pari' : (c.saldo > 0 ? 'Il CCC paga a MML' : 'MML paga al CCC');
+    doc.autoTable(Object.assign({}, stile, { startY: y,
+      head: [['Chi paga chi', '']],
+      body: [['A MML spetta', eur2(c.tot.mml)],
+             ['- commissioni Superb ' + (Number(r.voci.superbPerc) || 0) + '% su ' + eur2(c.lordoSuperb) + ' (le paga MML)', '- ' + eur2(c.commissione)],
+             ['- quanto MML ha già incassato (gift card, Freelab, aziende)', '- ' + eur2(c.tot.inManoMML)]],
+      foot: [[chi, eur2(Math.abs(c.saldo))]],
+      footStyles: { fillColor: VINO, textColor: [255, 255, 255], fontStyle: 'bold' },
+      columnStyles: { 1: dx } }));
+    y = doc.lastAutoTable.finalY + 8;
+    doc.autoTable(Object.assign({}, stile, { startY: y, head: [['Persone che hanno pagato nel mese', '']],
+      body: c.persone.map(function (p) { return [p[0], String(p[1])]; }), columnStyles: { 1: dx } }));
+    y = doc.lastAutoTable.finalY + 8;
+    if (r.vendite.length) {
+      doc.autoTable(Object.assign({}, stile, { startY: y,
+        head: [['Data', 'Fonte', 'Tipo', 'Pers.', 'Incasso', 'Nota']],
+        body: r.vendite.slice().sort(function (a, b) { return a.data < b.data ? -1 : 1; })
+          .map(function (x) { return [dataIt(x.data), x.fonte, x.tipo, x.persone, eur2(x.incasso), x.nota]; }),
+        styles: Object.assign({}, stile.styles, { fontSize: 8 }), columnStyles: { 3: dx, 4: dx } }));
+    }
+    doc.save('resoconto-' + r.mese + '.pdf');
+  }
 
   function creaPdf(logo) {
     var r = resoconto;
