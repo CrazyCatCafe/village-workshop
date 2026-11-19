@@ -386,14 +386,25 @@
           <button type="button" class="azione" id="meseEventiSucc" aria-label="Mese successivo" style="min-height:36px; padding:0 14px">›</button>
         </div>
       </div>
+      <div style="display:flex; gap:8px; margin:0 0 14px" id="evSchede">
+        <button type="button" class="scelta-btn" data-valore="incassi">Incassi del mese</button>
+        <button type="button" class="scelta-btn" data-valore="calendario">Calendario laboratori</button>
+      </div>
+      <div id="evIncassi">
+        <p style="margin:0 0 12px; font-size:14px; color:var(--tenue)">Chi ha pagato in questo mese, giorno per giorno: la data è quella del pagamento, non del laboratorio.</p>
+        <div class="carta scorri" style="padding:6px 6px 10px; margin-bottom:16px"><table class="ev-tab" id="evIncTab"></table></div>
+        <div class="carta" id="evIncResto"></div>
+      </div>
+      <div id="evCalendario" class="nascosto">
       <div id="evAltroGiorno" class="nascosto" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 14px">
         <span style="font-size:13px; color:var(--tenue)">Evento in un altro giorno:</span>
         <input type="date" id="evDataAltro" style="width:auto">
         <button type="button" class="azione" id="btnEvAltro">Apri</button>
       </div>
       <div class="carta scorri" style="padding:6px 6px 10px"><table class="ev-tab" id="evGriglia"></table></div>
-      <div id="evNota" style="font-size:12px; color:var(--tenue); margin-top:10px">Prenotati e importi in corsivo: giornate non ancora confermate, dalle email. Quando la giornata è confermata compaiono i numeri del modulo di Daniele.</div>
+      <div id="evNota" style="font-size:12px; color:var(--tenue); margin-top:10px">Il calendario dei laboratori serve per organizzarsi e per le statistiche dei prenotati: i soldi si contano negli Incassi, nel giorno del pagamento.</div>
       <div class="ev-det nascosto" id="evDettaglio"></div>
+      </div>
     </div>
 
     <!-- GIORNO: testata della pagina del giorno ------------------------ -->
@@ -1439,9 +1450,80 @@
   el('meseEventiSucc').addEventListener('click', function () { spostaMeseEventi(1); });
   el('meseEventi').addEventListener('change', function () { giornoScelto = ''; caricaEventi(); });
 
+  /* ---------- Eventi: due schede, incassi del mese (giorno del pagamento) e calendario laboratori */
+  var schedaEventi = 'incassi', cacheIncassi = {};
+  function mostraSchedaEventi(v) {
+    // chi non vede i soldi (sala) vede solo il calendario
+    if (ruolo === 'sala') v = 'calendario';
+    schedaEventi = v;
+    segnaScelta('evSchede', v);
+    el('evSchede').classList.toggle('nascosto', ruolo === 'sala');
+    el('evIncassi').classList.toggle('nascosto', v !== 'incassi');
+    el('evCalendario').classList.toggle('nascosto', v !== 'calendario');
+  }
+  Array.prototype.forEach.call(el('evSchede').querySelectorAll('.scelta-btn'), function (b) {
+    b.addEventListener('click', function () { mostraSchedaEventi(b.getAttribute('data-valore')); });
+  });
+
+  function caricaIncassiEventi(m) {
+    if (ruolo === 'sala') return;
+    if (cacheIncassi[m]) disegnaIncassiEventi(cacheIncassi[m]);
+    else el('evIncTab').innerHTML = '<tbody><tr><td style="color:var(--tenue)">Un attimo…</td></tr></tbody>';
+    chiama({ azione: 'incassato', mese: m }).then(function (r) {
+      cacheIncassi[m] = r;
+      if (meseEventi() === m) disegnaIncassiEventi(r);
+    }).catch(function (err) {
+      el('evIncTab').innerHTML = '<tbody><tr><td style="color:var(--salmone)">' + escapeHtml(err.message) + '</td></tr></tbody>';
+    });
+  }
+
+  function disegnaIncassiEventi(r) {
+    var COL = [['Superb', 'brunch', 'Brunch', 'Superb'], ['Superb', 'aperitivo', 'Aperitivo', 'Superb'],
+               ['Shopify', 'brunch', 'Brunch', 'Buoni CCC'], ['Shopify', 'aperitivo', 'Aperitivo', 'Buoni CCC']];
+    var giorni = {};
+    r.vendite.forEach(function (x) {
+      var g = giorni[x.data] = giorni[x.data] || { n: [0, 0, 0, 0], eur: 0 };
+      COL.forEach(function (c, i) { if (x.fonte === c[0] && x.tipo === c[1]) g.n[i] += Number(x.persone) || 0; });
+      g.eur += Number(x.incasso) || 0;
+    });
+    var GIORNI = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+    var tot = [0, 0, 0, 0], totEur = 0;
+    var h = '<thead><tr><th class="l">Giorno del pagamento</th>' +
+      COL.map(function (c) { return '<th class="cc">' + c[2] + '<small>' + c[3] + '</small></th>'; }).join('') +
+      '<th class="r">Incassato</th></tr></thead><tbody>';
+    var date = Object.keys(giorni).sort();
+    if (!date.length) h += '<tr><td class="l" colspan="6" style="color:var(--tenue); font-weight:400">Nessuna vendita letta dalle email in questo mese.</td></tr>';
+    date.forEach(function (iso) {
+      var g = giorni[iso], d = new Date(iso + 'T12:00:00');
+      h += '<tr><td class="l">' + GIORNI[d.getDay()] + ' ' + d.getDate() + '</td>' +
+        g.n.map(function (v, i) { tot[i] += v; return v ? '<td>' + v + '</td>' : '<td class="z">0</td>'; }).join('') +
+        '<td class="r">' + euro(g.eur) + '</td></tr>';
+      totEur += g.eur;
+    });
+    h += '</tbody><tfoot><tr class="tot"><td class="l">Totale del mese</td>' + tot.map(function (v) { return '<td>' + v + '</td>'; }).join('') +
+      '<td class="r"><span style="font-family:Fraunces,serif; font-size:20px">' + euro(totEur) + '</span><span class="s">' +
+      (tot[0] + tot[1] + tot[2] + tot[3]) + ' persone</span></td></tr></tfoot>';
+    el('evIncTab').innerHTML = h;
+
+    var v = r.voci || {};
+    var ev = r.eventi || [];
+    var box = function (et, val, sotto) {
+      return '<div class="tessera" style="flex:1 1 150px; background:rgba(251,243,238,.08)"><div class="eticchetta">' + et + '</div><div class="cifra">' + val + '</div>' +
+        (sotto ? '<div style="font-size:12px; color:var(--tenue)">' + sotto + '</div>' : '') + '</div>';
+    };
+    el('evIncResto').innerHTML = '<div style="font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--legno-chiaro); font-weight:700; margin-bottom:10px">Il resto del mese · scritto a mano nel Resoconto o dagli eventi</div>' +
+      '<div class="fila">' +
+      box('Gift card MML', v.giftcardMML || 0) + box('Decorazioni', v.deco || 0) +
+      box('Freelab 10 € / 20 €', (v.f10 || 0) + ' / ' + (v.f20 || 0)) +
+      box('Aziende e compleanni', ev.length, ev.reduce(function (s, e) { return s + (Number(e.persone) || 0); }, 0) + ' persone') +
+      '</div>';
+  }
+
   function caricaEventi() {
     if (!el('meseEventi').value) el('meseEventi').value = oggiISO().slice(0, 7);
     var m = meseEventi();
+    mostraSchedaEventi(schedaEventi);
+    caricaIncassiEventi(m);
     if (cacheEventi[m]) disegnaEventi(cacheEventi[m]);
     else el('evGriglia').innerHTML = '<tbody><tr><td style="color:var(--tenue)">Un attimo…</td></tr></tbody>';
     return chiama({ azione: 'calendario', mese: m })
@@ -3254,7 +3336,7 @@
   el('btnSalvaVoci').addEventListener('click', function () {
     var b = el('btnSalvaVoci'); b.disabled = true;
     chiama({ azione: 'salvaVociMese', mese: incassato.mese, voci: JSON.stringify(incassato.voci) })
-      .then(function () { avvisa('Salvato.'); })
+      .then(function () { avvisa('Salvato.'); cacheIncassi = {}; })
       .catch(function (err) { avvisa('Non salvato: ' + err.message, true); })
       .finally(function () { b.disabled = false; });
   });
