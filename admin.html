@@ -1091,7 +1091,7 @@
         <h2 style="margin:0 0 10px; font-family:Fraunces,serif; font-size:21px; font-weight:800; letter-spacing:0; text-transform:none; color:var(--panna)">Come si dividono i soldi</h2>
         <h3 style="margin:10px 0 6px">Prenotazioni, buoni e gift card</h3>
         <div class="campo"><label for="dvQuotaMML">A MML, per persona (€)</label><input type="text" id="dvQuotaMML" inputmode="decimal" style="width:100px"></div>
-        <div style="font-size:13px; color:var(--tenue); margin:-4px 0 14px">Al CCC il resto. Vale per le prenotazioni Superb, i buoni CCC e le gift card MML (55 €): brunch 65 → 30 al CCC, aperitivo 55 → 20. Su Superb tolgo da solo 1 € a persona (56 → 55).</div>
+        <div style="font-size:13px; color:var(--tenue); margin:-4px 0 14px">Al CCC il resto. Vale per le prenotazioni Superb, i buoni CCC e le gift card MML (55 €): brunch 65 → 30 al CCC, aperitivo 55 → 20. Superb: conto il prezzo dell'email (65, 55); se arriva 66 o 56 tolgo 1 €.</div>
         <h3 style="margin:10px 0 6px">Decorazione</h3>
         <div style="display:flex; gap:14px; flex-wrap:wrap">
           <div class="campo"><label for="dvDecoMML">A MML (€)</label><input type="text" id="dvDecoMML" inputmode="decimal" style="width:100px"></div>
@@ -1614,7 +1614,7 @@
       '<td>' + g + '</td><td>' + de + '</td><td>' + fr + '</td><td>' + (totP + g + de + fr) + '</td><td class="r">' + euro(totEur + altEur) + '</td></tr></tfoot>';
     el('evIncTab').innerHTML = h;
     var dan = r.daniele;
-    el('evIncNota').innerHTML = 'Superb: tolto 1 € a persona (56 → 55). "Altro" lo scrive Luigi: gift card da MML a inizio mese, decorazioni e Freelab dal modulo di Daniele.' +
+    el('evIncNota').innerHTML = 'Superb: prezzo dell’email (65 / 55). "Altro" lo scrive Luigi: gift card da MML a inizio mese, decorazioni e Freelab dal modulo di Daniele.' +
       (dan ? ' <span style="color:var(--legno-chiaro)">Nel modulo di Daniele questo mese: decorazioni ' + (dan.decorazione || 0) + ' · Freelab ' + ((dan.cottura || 0) + (dan.cristallina || 0)) +
              ' · gift card MML ' + ((dan.giftcard || 0) + (dan.buono || 0)) + '.</span>' : '');
     ['giftcardMML', 'deco', 'freelab'].forEach(function (k) {
@@ -3702,8 +3702,8 @@
         .reduce(function (s, x) { return s + (Number(x[campo]) || 0); }, 0);
     };
     var lordoSuperb = 0;
-    [['Superb', 'brunch', 'Superb · Brunch ceramica', 'email Superb, tolto 1 € a persona'],
-     ['Superb', 'aperitivo', 'Superb · Aperitivo ceramica', 'email Superb, tolto 1 € a persona'],
+    [['Superb', 'brunch', 'Superb · Brunch ceramica', 'email Superb'],
+     ['Superb', 'aperitivo', 'Superb · Aperitivo ceramica', 'email Superb'],
      ['Shopify', 'brunch', 'Buoni CCC · Brunch', 'ordini Shopify'],
      ['Shopify', 'aperitivo', 'Buoni CCC · Aperitivo/Merenda', 'ordini Shopify']].forEach(function (t) {
       var pers = somma(t[0], t[1], 'persone'), inc = somma(t[0], t[1], 'incasso');
